@@ -1,6 +1,14 @@
+import enum
+
 from sqlalchemy import Column, BigInteger, String, Text, SmallInteger, Integer, TIMESTAMP
 from sqlalchemy.sql import func
 from app.core.database import Base
+
+
+class Role(str, enum.Enum):
+    ROLE_ADMIN = "admin"
+    ROLE_STUDENT = "student"
+
 
 class User(Base):
     __tablename__ = "users"

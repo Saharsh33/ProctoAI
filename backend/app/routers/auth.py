@@ -4,7 +4,6 @@ from app.schemas.user import UserSignup, UserLogin, TokenResponse
 from app.services.auth_service import signup_user, login_user
 from app.core.database import SessionLocal
 from app.core.auth import get_current_user
-from app.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -30,10 +29,5 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     return {"access_token": token}
 
 @router.get("/me")
-def read_me(current_user: User = Depends(get_current_user)):
-    return {
-        "uid": current_user.uid,
-        "name": current_user.name,
-        "email": current_user.email,
-        "user_type": current_user.user_type,
-    }
+def read_me(current_user: dict = Depends(get_current_user)):
+    return current_user
