@@ -13,7 +13,7 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -25,7 +25,7 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def get_current_user(
-    token: HTTPAuthorizationCredentials = Depends(security),
+    token: HTTPAuthorizationCredentials | None = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
     """Validate Bearer JWT and return the corresponding User."""
@@ -34,6 +34,8 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if token is None:
+        raise credentials_exception
     try:
         payload = decode_access_token(token.credentials)
         user_id_str: str | None = payload.get("sub")

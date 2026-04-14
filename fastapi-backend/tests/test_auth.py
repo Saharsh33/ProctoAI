@@ -1,7 +1,8 @@
 """Tests for the auth module: signup, login, JWT-protected routes, and RBAC."""
-import pytest
+
 from datetime import datetime, timezone
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -39,7 +40,9 @@ def _signup(client, payload):
 
 
 def _login(client, email, password):
-    return client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    return client.post(
+        "/api/v1/auth/login", json={"email": email, "password": password}
+    )
 
 
 def _auth_header(token):
@@ -105,9 +108,9 @@ class TestLogin:
 
 class TestJWTProtection:
     def test_unprotected_route_accessible_without_token(self, client):
-        """Public listing endpoint is accessible without authentication."""
+        """Listing endpoint requires authentication — returns 401 without token."""
         resp = client.get("/api/v1/users/")
-        assert resp.status_code == 200
+        assert resp.status_code == 401
 
     def test_protected_me_requires_token(self, client):
         """Accessing /auth/me without a token should return 401."""
