@@ -1,4 +1,5 @@
 """Tests for exam creation endpoint: success, validation, and RBAC."""
+
 import pytest
 
 ADMIN_PAYLOAD = {
@@ -33,7 +34,9 @@ def _signup(client, payload):
 
 
 def _login(client, email, password):
-    return client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    return client.post(
+        "/api/v1/auth/login", json={"email": email, "password": password}
+    )
 
 
 def _auth_header(token):
@@ -117,9 +120,9 @@ class TestExamCreation:
         assert resp.status_code == 403
 
     def test_unauthenticated_cannot_create_exam(self, client):
-        """Unauthenticated requests must be rejected with 403."""
+        """Unauthenticated requests must be rejected with 401."""
         resp = client.post("/api/v1/exam/create", json=VALID_EXAM)
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     def test_create_exam_missing_title(self, client):
         """Missing required field 'title' should return 422."""
@@ -308,7 +311,10 @@ class TestExamQuestions:
             question_data = {
                 "qid": f"Q{i}",
                 "q": f"Question {i}",
-                "a": "A", "b": "B", "c": "C", "d": "D",
+                "a": "A",
+                "b": "B",
+                "c": "C",
+                "d": "D",
                 "ans": "A",
                 "marks": 1,
                 "uid": admin_user_id,
@@ -333,7 +339,9 @@ class TestExamQuestions:
         """Students are forbidden from adding questions to exams."""
         admin_token = _get_admin_token(client)
         student_token = _get_student_token(client)
-        student_resp = client.get("/api/v1/auth/me", headers=_auth_header(student_token))
+        student_resp = client.get(
+            "/api/v1/auth/me", headers=_auth_header(student_token)
+        )
         student_user_id = student_resp.json()["userId"]
 
         # Admin creates exam
@@ -344,7 +352,10 @@ class TestExamQuestions:
         question_data = {
             "qid": "Q1",
             "q": "Question",
-            "a": "A", "b": "B", "c": "C", "d": "D",
+            "a": "A",
+            "b": "B",
+            "c": "C",
+            "d": "D",
             "ans": "A",
             "marks": 1,
             "uid": student_user_id,
@@ -369,14 +380,19 @@ class TestExamSubmission:
         admin_user_id = admin_resp.json()["userId"]
 
         # Admin creates exam with questions
-        create_resp = _create_exam(client, admin_token, {**VALID_EXAM, "status": "active"})
+        create_resp = _create_exam(
+            client, admin_token, {**VALID_EXAM, "status": "active"}
+        )
         exam_id = create_resp.json()["examId"]
 
         # Add a question
         question_data = {
             "qid": "Q1",
             "q": "What is 2+2?",
-            "a": "3", "b": "4", "c": "5", "d": "6",
+            "a": "3",
+            "b": "4",
+            "c": "5",
+            "d": "6",
             "ans": "B",
             "marks": 1,
             "uid": admin_user_id,
@@ -389,12 +405,7 @@ class TestExamSubmission:
         )
 
         # Student submits answers
-        submission_data = {
-            "examId": exam_id,
-            "answers": [
-                {"qid": "Q1", "answer": "B"}
-            ]
-        }
+        submission_data = {"examId": exam_id, "answers": [{"qid": "Q1", "answer": "B"}]}
         resp = client.post(
             f"/api/v1/exam/{exam_id}/submit",
             json=submission_data,
@@ -412,10 +423,7 @@ class TestExamSubmission:
         create_resp = _create_exam(client, admin_token)
         exam_id = create_resp.json()["examId"]
 
-        submission_data = {
-            "examId": exam_id,
-            "answers": [{"qid": "Q1", "answer": "A"}]
-        }
+        submission_data = {"examId": exam_id, "answers": [{"qid": "Q1", "answer": "A"}]}
         resp = client.post(
             f"/api/v1/exam/{exam_id}/submit",
             json=submission_data,
