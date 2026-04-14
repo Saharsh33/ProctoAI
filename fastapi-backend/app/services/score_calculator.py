@@ -39,10 +39,14 @@ def calculate_exam_score(
     """
     try:
         # Get all student answers for this exam
-        student_answers = db.query(Student).filter(
-            Student.uid == uid,
-            Student.test_id == exam_id,
-        ).all()
+        student_answers = (
+            db.query(Student)
+            .filter(
+                Student.uid == uid,
+                Student.test_id == exam_id,
+            )
+            .all()
+        )
 
         if not student_answers:
             logger.warning(f"No answers found for student {uid} in exam {exam_id}")
@@ -63,10 +67,14 @@ def calculate_exam_score(
             student_answer = answer_record.ans
 
             # Get question details
-            question = db.query(Question).filter(
-                Question.qid == qid,
-                Question.examId == answer_record.examId,
-            ).first()
+            question = (
+                db.query(Question)
+                .filter(
+                    Question.qid == qid,
+                    Question.examId == answer_record.examId,
+                )
+                .first()
+            )
 
             if not question:
                 logger.warning(f"Question {qid} not found for exam {exam_id}")
@@ -76,7 +84,10 @@ def calculate_exam_score(
             total_marks += question.marks
 
             # Check if answer is correct
-            if student_answer and student_answer.strip().upper() == question.ans.strip().upper():
+            if (
+                student_answer
+                and student_answer.strip().upper() == question.ans.strip().upper()
+            ):
                 obtained_marks += question.marks
                 correct_count += 1
 

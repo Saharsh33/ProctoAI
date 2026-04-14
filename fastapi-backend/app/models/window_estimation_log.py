@@ -17,7 +17,11 @@ class WindowEstimationLog(Base):
     test_id: Mapped[str] = mapped_column(String(100), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     window_event: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-    transaction_log: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    transaction_log: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
-    uid: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True)
+    uid: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True
+    )
     user = relationship("User", back_populates="window_logs")

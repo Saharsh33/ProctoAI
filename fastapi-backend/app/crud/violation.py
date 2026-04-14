@@ -15,7 +15,10 @@ def create(db: Session, payload: ViolationCreate) -> Violation:
     db.refresh(violation)
     logger.info(
         "Violation created: id=%s, email=%s, test_id=%s, type=%s",
-        violation.vid, violation.email, violation.test_id, violation.violation_type,
+        violation.vid,
+        violation.email,
+        violation.test_id,
+        violation.violation_type,
     )
     return violation
 
@@ -39,6 +42,9 @@ def list_violations(
     violations = list(db.execute(stmt).scalars().all())
     logger.debug(
         "Listed %d violations (email=%s, test_id=%s, type=%s)",
-        len(violations), email, test_id, violation_type,
+        len(violations),
+        email,
+        test_id,
+        violation_type,
     )
     return violations

@@ -35,7 +35,11 @@ from sqlalchemy.orm import Session
 
 from app.services.trust_score import calculate_trust_score
 from app.services.score_calculator import calculate_exam_score
-from app.crud.report import create as create_report, get_by_exam_and_email, update_pdf_path
+from app.crud.report import (
+    create as create_report,
+    get_by_exam_and_email,
+    update_pdf_path,
+)
 from app.models.exam_report import ExamReport
 
 logger = logging.getLogger(__name__)
@@ -46,6 +50,7 @@ PDF_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── Report generation ──────────────────────────────────
+
 
 def generate_report(
     db: Session,
@@ -113,14 +118,19 @@ def generate_report(
     elapsed_ms = (time.monotonic() - t0) * 1000
     logger.info(
         "Report generated for %s on exam %s in %.0f ms (trust_score=%d, marks=%d/%d)",
-        email, test_id, elapsed_ms, score_data["trust_score"],
-        marks_data["obtained_marks"], marks_data["total_marks"],
+        email,
+        test_id,
+        elapsed_ms,
+        score_data["trust_score"],
+        marks_data["obtained_marks"],
+        marks_data["total_marks"],
     )
 
     return report
 
 
 # ── PDF export via ReportLab ───────────────────────────
+
 
 def export_pdf(
     report: ExamReport,
@@ -146,50 +156,69 @@ def export_pdf(
     )
 
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(
-        name="ReportTitle",
-        parent=styles["Heading1"],
-        fontSize=22,
-        spaceAfter=6,
-        textColor=colors.HexColor("#4f46e5"),
-    ))
-    styles.add(ParagraphStyle(
-        name="SectionHead",
-        parent=styles["Heading2"],
-        fontSize=14,
-        spaceBefore=14,
-        spaceAfter=6,
-        textColor=colors.HexColor("#1e293b"),
-    ))
-    styles.add(ParagraphStyle(
-        name="Body",
-        parent=styles["Normal"],
-        fontSize=10,
-        leading=14,
-    ))
+    styles.add(
+        ParagraphStyle(
+            name="ReportTitle",
+            parent=styles["Heading1"],
+            fontSize=22,
+            spaceAfter=6,
+            textColor=colors.HexColor("#4f46e5"),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="SectionHead",
+            parent=styles["Heading2"],
+            fontSize=14,
+            spaceBefore=14,
+            spaceAfter=6,
+            textColor=colors.HexColor("#1e293b"),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="Body",
+            parent=styles["Normal"],
+            fontSize=10,
+            leading=14,
+        )
+    )
 
     elements: list = []
 
     # ── Header ──
     elements.append(Paragraph("ProctoAI – Proctoring Report", styles["ReportTitle"]))
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0")))
+    elements.append(
+        HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0"))
+    )
     elements.append(Spacer(1, 8))
 
     # ── Metadata table ──
     meta_data = [
         ["Exam", exam_title or report.test_id],
         ["Student", report.email],
-        ["Generated", report.generated_at.strftime("%Y-%m-%d %H:%M:%S") if report.generated_at else datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+        [
+            "Generated",
+            (
+                report.generated_at.strftime("%Y-%m-%d %H:%M:%S")
+                if report.generated_at
+                else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ),
+        ],
         ["Report ID", str(report.report_id)],
     ]
     meta_table = Table(meta_data, colWidths=[90, 380])
-    meta_table.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#64748b")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
+    meta_table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#64748b")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     elements.append(meta_table)
     elements.append(Spacer(1, 12))
 
@@ -197,13 +226,15 @@ def export_pdf(
     elements.append(Paragraph("Trust Score", styles["SectionHead"]))
     trust = score_data["trust_score"]
     trust_color = "#10b981" if trust >= 70 else "#f59e0b" if trust >= 40 else "#ef4444"
-    elements.append(Paragraph(
-        f'<font size="28" color="{trust_color}"><b>{trust}</b></font>'
-        f'<font size="12" color="#94a3b8"> / 100</font>'
-        f'&nbsp;&nbsp;&nbsp;<font size="10" color="#64748b">'
-        f'(penalty: −{score_data["penalty"]}  |  violations: {score_data["total_violations"]})</font>',
-        styles["Body"],
-    ))
+    elements.append(
+        Paragraph(
+            f'<font size="28" color="{trust_color}"><b>{trust}</b></font>'
+            f'<font size="12" color="#94a3b8"> / 100</font>'
+            f'&nbsp;&nbsp;&nbsp;<font size="10" color="#64748b">'
+            f'(penalty: −{score_data["penalty"]}  |  violations: {score_data["total_violations"]})</font>',
+            styles["Body"],
+        )
+    )
     elements.append(Spacer(1, 10))
 
     # ── Exam Marks ──
@@ -214,15 +245,21 @@ def export_pdf(
         percentage = marks_data.get("percentage", 0)
         correct = marks_data.get("correct_count", 0)
         total_questions = marks_data.get("total_count", 0)
-        
-        marks_color = "#10b981" if percentage >= 70 else "#f59e0b" if percentage >= 40 else "#ef4444"
-        elements.append(Paragraph(
-            f'<font size="24" color="{marks_color}"><b>{obtained}</b></font>'
-            f'<font size="12" color="#94a3b8"> / {total_marks}</font>'
-            f'&nbsp;&nbsp;&nbsp;<font size="10" color="#64748b">'
-            f'({percentage}%  |  {correct}/{total_questions} correct)</font>',
-            styles["Body"],
-        ))
+
+        marks_color = (
+            "#10b981"
+            if percentage >= 70
+            else "#f59e0b" if percentage >= 40 else "#ef4444"
+        )
+        elements.append(
+            Paragraph(
+                f'<font size="24" color="{marks_color}"><b>{obtained}</b></font>'
+                f'<font size="12" color="#94a3b8"> / {total_marks}</font>'
+                f'&nbsp;&nbsp;&nbsp;<font size="10" color="#64748b">'
+                f"({percentage}%  |  {correct}/{total_questions} correct)</font>",
+                styles["Body"],
+            )
+        )
         elements.append(Spacer(1, 10))
 
     # ── Violation Breakdown Table ──
@@ -232,54 +269,73 @@ def export_pdf(
     if breakdown:
         table_data = [["Violation Type", "Count", "Weight", "Penalty"]]
         for item in breakdown:
-            table_data.append([
-                item["type"].replace("_", " ").title(),
-                str(item["count"]),
-                str(item["weight"]),
-                f'−{item["subtotal"]}',
-            ])
+            table_data.append(
+                [
+                    item["type"].replace("_", " ").title(),
+                    str(item["count"]),
+                    str(item["weight"]),
+                    f'−{item["subtotal"]}',
+                ]
+            )
         table_data.append(["", "", "Total", f'−{score_data["penalty"]}'])
 
         t = Table(table_data, colWidths=[180, 70, 70, 80])
-        t.setStyle(TableStyle([
-            # Header row
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 10),
-            # Body
-            ("FONTSIZE", (0, 1), (-1, -1), 9),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.HexColor("#f8fafc"), colors.white]),
-            # Total row
-            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-            ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor("#cbd5e1")),
-            # Grid
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("ALIGN", (1, 0), (-1, -1), "CENTER"),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    # Header row
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    # Body
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -2),
+                        [colors.HexColor("#f8fafc"), colors.white],
+                    ),
+                    # Total row
+                    ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                    ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor("#cbd5e1")),
+                    # Grid
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         elements.append(t)
     else:
-        elements.append(Paragraph(
-            '<font color="#10b981">No violations recorded – excellent conduct.</font>',
-            styles["Body"],
-        ))
+        elements.append(
+            Paragraph(
+                '<font color="#10b981">No violations recorded – excellent conduct.</font>',
+                styles["Body"],
+            )
+        )
 
     elements.append(Spacer(1, 14))
 
     # ── Summary ──
     elements.append(Paragraph("Summary", styles["SectionHead"]))
-    elements.append(Paragraph(report.summary or "No summary available.", styles["Body"]))
+    elements.append(
+        Paragraph(report.summary or "No summary available.", styles["Body"])
+    )
 
     elements.append(Spacer(1, 20))
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e2e8f0")))
+    elements.append(
+        HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e2e8f0"))
+    )
     elements.append(Spacer(1, 4))
-    elements.append(Paragraph(
-        '<font size="8" color="#94a3b8">Generated by ProctoAI – AI-powered proctoring platform</font>',
-        styles["Body"],
-    ))
+    elements.append(
+        Paragraph(
+            '<font size="8" color="#94a3b8">Generated by ProctoAI – AI-powered proctoring platform</font>',
+            styles["Body"],
+        )
+    )
 
     # Build PDF
     doc.build(elements)
@@ -293,7 +349,14 @@ def export_pdf(
 
 # ── Helpers ────────────────────────────────────────────
 
-def _build_summary(email: str, test_id: str, exam_title: str, score_data: dict, marks_data: dict | None = None) -> str:
+
+def _build_summary(
+    email: str,
+    test_id: str,
+    exam_title: str,
+    score_data: dict,
+    marks_data: dict | None = None,
+) -> str:
     """Generate a human-readable summary paragraph."""
     trust = score_data["trust_score"]
     total = score_data["total_violations"]
@@ -320,10 +383,14 @@ def _build_summary(email: str, test_id: str, exam_title: str, score_data: dict, 
 
     for item in breakdown:
         vtype = item["type"].replace("_", " ")
-        parts.append(f"  • {vtype}: {item['count']} occurrence(s) (−{item['subtotal']} points)")
+        parts.append(
+            f"  • {vtype}: {item['count']} occurrence(s) (−{item['subtotal']} points)"
+        )
 
     if trust >= 70:
-        parts.append("Overall conduct is acceptable, though some minor issues were flagged.")
+        parts.append(
+            "Overall conduct is acceptable, though some minor issues were flagged."
+        )
     elif trust >= 40:
         parts.append("Conduct requires review – multiple violations detected.")
     else:

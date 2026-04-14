@@ -22,7 +22,9 @@ def _check_admin_owns_exam(exam: Exam, admin: User) -> None:
     if exam.createdBy != admin.user_id:
         logger.warning(
             "Access denied: admin %s tried to access exam %s owned by %s",
-            admin.user_id, exam.examId, exam.createdBy,
+            admin.user_id,
+            exam.examId,
+            exam.createdBy,
         )
         raise HTTPException(
             status_code=403,
@@ -37,7 +39,9 @@ def create_exam(
     current_user: User = Depends(require_role("admin")),
 ):
     """Create a new exam. Restricted to admin role only."""
-    logger.info("Creating exam: title='%s', admin=%s", payload.title, current_user.user_id)
+    logger.info(
+        "Creating exam: title='%s', admin=%s", payload.title, current_user.user_id
+    )
     exam = crud.create_exam(db, payload, created_by=current_user.user_id)
     logger.info("Exam created: id=%s, title='%s'", exam.examId, exam.title)
     return exam
@@ -53,10 +57,15 @@ def list_exams(
     """List exams. Admin sees only their own exams; students see all."""
     logger.info(
         "Listing exams: role=%s, user=%s, skip=%d, limit=%d",
-        current_user.role.value, current_user.user_id, skip, limit,
+        current_user.role.value,
+        current_user.user_id,
+        skip,
+        limit,
     )
     if current_user.role.value == "admin":
-        exams = crud.list_exams(db, skip=skip, limit=limit, created_by=current_user.user_id)
+        exams = crud.list_exams(
+            db, skip=skip, limit=limit, created_by=current_user.user_id
+        )
     else:
         exams = crud.list_exams(db, skip=skip, limit=limit)
     logger.debug("Returned %d exams", len(exams))
@@ -71,6 +80,7 @@ def my_submissions(
     """Return list of exam IDs that the current student has already submitted."""
     logger.info("Fetching submissions for student=%s", current_user.user_id)
     from app.models.student import Student
+
     rows = (
         db.query(Student.examId)
         .filter(Student.uid == current_user.user_id)
@@ -163,8 +173,14 @@ def submit_exam(
 
     existing_answers = crud.get_student_answers(db, current_user.user_id, exam_id)
     if existing_answers:
-        logger.warning("Duplicate submission rejected: student=%s, exam=%s", current_user.user_id, exam_id)
-        raise HTTPException(status_code=409, detail="You have already submitted this exam")
+        logger.warning(
+            "Duplicate submission rejected: student=%s, exam=%s",
+            current_user.user_id,
+            exam_id,
+        )
+        raise HTTPException(
+            status_code=409, detail="You have already submitted this exam"
+        )
 
     submitted_count = 0
     for answer in payload.answers:
@@ -175,13 +191,15 @@ def submit_exam(
             test_id=str(exam_id),
             qid=answer.qid,
             answer=answer.answer,
-            email=current_user.email
+            email=current_user.email,
         )
         submitted_count += 1
 
     logger.info(
         "Exam submitted: exam=%s, student=%s, answers=%d",
-        exam_id, current_user.user_id, submitted_count,
+        exam_id,
+        current_user.user_id,
+        submitted_count,
     )
     return ExamSubmissionResponse(
         message="Exam submitted successfully",
@@ -242,7 +260,12 @@ def update_question(
     current_user: User = Depends(require_role("admin")),
 ):
     """Update a question in an exam. Admin can only modify their own exams."""
-    logger.info("Updating question: qid=%d, exam=%s, admin=%s", question_id, exam_id, current_user.user_id)
+    logger.info(
+        "Updating question: qid=%d, exam=%s, admin=%s",
+        question_id,
+        exam_id,
+        current_user.user_id,
+    )
     exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
@@ -255,7 +278,9 @@ def update_question(
 
     if question.examId != exam_id:
         logger.warning("Question %d does not belong to exam %s", question_id, exam_id)
-        raise HTTPException(status_code=400, detail="Question does not belong to this exam")
+        raise HTTPException(
+            status_code=400, detail="Question does not belong to this exam"
+        )
 
     logger.info("Question updated: qid=%d, exam=%s", question_id, exam_id)
     return question
@@ -269,7 +294,12 @@ def delete_question(
     current_user: User = Depends(require_role("admin")),
 ):
     """Delete a question from an exam. Admin can only modify their own exams."""
-    logger.info("Deleting question: qid=%d, exam=%s, admin=%s", question_id, exam_id, current_user.user_id)
+    logger.info(
+        "Deleting question: qid=%d, exam=%s, admin=%s",
+        question_id,
+        exam_id,
+        current_user.user_id,
+    )
     exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
@@ -282,7 +312,9 @@ def delete_question(
 
     if question.examId != exam_id:
         logger.warning("Question %d does not belong to exam %s", question_id, exam_id)
-        raise HTTPException(status_code=400, detail="Question does not belong to this exam")
+        raise HTTPException(
+            status_code=400, detail="Question does not belong to this exam"
+        )
 
     success = crud.delete_question(db, question_id)
     if not success:

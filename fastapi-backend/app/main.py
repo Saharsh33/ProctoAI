@@ -26,7 +26,9 @@ async def lifespan(app: FastAPI):
         ensure_bucket()
         logger.info("MinIO bucket ready")
     except Exception as exc:
-        logger.warning("MinIO bucket init skipped (service may be unavailable): %s", exc)
+        logger.warning(
+            "MinIO bucket init skipped (service may be unavailable): %s", exc
+        )
 
     violation_buffer.start()
     logger.info("ViolationBuffer background task started")
@@ -37,6 +39,7 @@ async def lifespan(app: FastAPI):
     await violation_buffer.stop()
     logger.info("ViolationBuffer stopped")
 
+
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
     origins = settings.cors_origins_list()
@@ -46,8 +49,9 @@ def create_app() -> FastAPI:
             allow_origins=origins,
             allow_credentials=True,
             allow_methods=["*"],
-            allow_headers=["*"]
+            allow_headers=["*"],
         )
+
     @app.get("/health")
     def health():
         return {"status": "ok"}

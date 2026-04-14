@@ -16,7 +16,9 @@ class Teacher(Base):
     email: Mapped[str] = mapped_column(String(100), nullable=False)
     test_id: Mapped[str] = mapped_column(String(100), nullable=False)
     test_type: Mapped[str] = mapped_column(String(75), nullable=False)
-    start: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    start: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
     end: Mapped[datetime] = mapped_column("end", DateTime, nullable=False)
     duration: Mapped[int] = mapped_column(Integer, nullable=False)
     show_ans: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -25,7 +27,11 @@ class Teacher(Base):
     topic: Mapped[str] = mapped_column(String(100), nullable=False)
     neg_marks: Mapped[int] = mapped_column(Integer, nullable=False)
     calc: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-    proctoring_type: Mapped[int] = mapped_column(SmallInteger, server_default="0", nullable=False)
+    proctoring_type: Mapped[int] = mapped_column(
+        SmallInteger, server_default="0", nullable=False
+    )
 
-    uid: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True)
+    uid: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True
+    )
     user = relationship("User", back_populates="teachers")

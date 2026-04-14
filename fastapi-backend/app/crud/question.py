@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 def get_by_id(db: Session, questions_uid: int) -> Question | None:
     question = db.get(Question, questions_uid)
-    logger.debug("Question lookup: qid=%s, found=%s", questions_uid, question is not None)
+    logger.debug(
+        "Question lookup: qid=%s, found=%s", questions_uid, question is not None
+    )
     return question
 
 
@@ -22,7 +24,9 @@ def list_questions(db: Session, skip: int = 0, limit: int = 100) -> list[Questio
     return questions
 
 
-def list_questions_by_exam(db: Session, exam_id: uuid.UUID, skip: int = 0, limit: int = 100) -> list[Question]:
+def list_questions_by_exam(
+    db: Session, exam_id: uuid.UUID, skip: int = 0, limit: int = 100
+) -> list[Question]:
     """List all questions for a specific exam."""
     stmt = select(Question).where(Question.examId == exam_id).offset(skip).limit(limit)
     questions = list(db.execute(stmt).scalars().all())
@@ -51,7 +55,9 @@ def update(db: Session, questions_uid: int, q_in: QuestionUpdate) -> Question | 
 
     db.commit()
     db.refresh(question)
-    logger.info("Question updated: qid=%s, fields=%s", questions_uid, list(update_data.keys()))
+    logger.info(
+        "Question updated: qid=%s, fields=%s", questions_uid, list(update_data.keys())
+    )
     return question
 
 

@@ -61,7 +61,9 @@ def require_role(*roles: str):
         if current_user.role.value not in roles:
             logger.warning(
                 "Access denied: user=%s (role=%s) tried to access endpoint requiring %s",
-                current_user.user_id, current_user.role.value, roles,
+                current_user.user_id,
+                current_user.role.value,
+                roles,
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

@@ -20,5 +20,7 @@ class PracticalTest(Base):
     executed: Mapped[str | None] = mapped_column(String(125), nullable=True)
     marks: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    uid: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True)
+    uid: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True
+    )
     user = relationship("User", back_populates="practicaltests")

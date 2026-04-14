@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # ── Admin Action CRUD ────────────────────────────────
 
+
 def create_action(
     db: Session,
     payload: AdminActionCreate,
@@ -29,7 +30,10 @@ def create_action(
     db.refresh(action)
     logger.info(
         "Admin action created: id=%s, type=%s, violation_id=%d, by=%s",
-        action.action_id, action.action_type, payload.violation_id, performed_by,
+        action.action_id,
+        action.action_type,
+        payload.violation_id,
+        performed_by,
     )
     return action
 
@@ -49,7 +53,12 @@ def list_actions(
         stmt = stmt.where(AdminAction.performed_by == performed_by)
     stmt = stmt.order_by(AdminAction.performed_at.desc()).offset(skip).limit(limit)
     actions = list(db.execute(stmt).scalars().all())
-    logger.debug("Listed %d admin actions (violation_id=%s, by=%s)", len(actions), violation_id, performed_by)
+    logger.debug(
+        "Listed %d admin actions (violation_id=%s, by=%s)",
+        len(actions),
+        violation_id,
+        performed_by,
+    )
     return actions
 
 
@@ -85,7 +94,11 @@ def list_violations_with_actions(
     violations = list(db.execute(stmt).unique().scalars().all())
     logger.debug(
         "Listed %d violations with actions (email=%s, test_id=%s, type=%s, severity=%s)",
-        len(violations), email, test_id, violation_type, severity,
+        len(violations),
+        email,
+        test_id,
+        violation_type,
+        severity,
     )
     return violations
 
@@ -100,6 +113,7 @@ def count_violations(
     When allowed_test_ids is provided, only violations from those exams are counted.
     """
     from sqlalchemy import func
+
     stmt = select(func.count(Violation.vid))
     if allowed_test_ids is not None:
         if not allowed_test_ids:

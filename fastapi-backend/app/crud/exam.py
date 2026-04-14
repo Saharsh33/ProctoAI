@@ -8,7 +8,9 @@ from app.schemas.exam import ExamCreate, ExamUpdate
 logger = logging.getLogger(__name__)
 
 
-def create(db: Session, exam_in: ExamCreate, created_by: "uuid.UUID | None" = None) -> Exam:
+def create(
+    db: Session, exam_in: ExamCreate, created_by: "uuid.UUID | None" = None
+) -> Exam:
     exam = Exam(
         title=exam_in.title,
         duration=exam_in.duration,
@@ -20,17 +22,30 @@ def create(db: Session, exam_in: ExamCreate, created_by: "uuid.UUID | None" = No
     db.add(exam)
     db.commit()
     db.refresh(exam)
-    logger.info("Exam created: id=%s, title='%s', created_by=%s", exam.examId, exam.title, created_by)
+    logger.info(
+        "Exam created: id=%s, title='%s', created_by=%s",
+        exam.examId,
+        exam.title,
+        created_by,
+    )
     return exam
 
 
-def list_exams(db: Session, skip: int = 0, limit: int = 100, created_by: "uuid.UUID | None" = None) -> list[Exam]:
+def list_exams(
+    db: Session, skip: int = 0, limit: int = 100, created_by: "uuid.UUID | None" = None
+) -> list[Exam]:
     """List exams with pagination. Optionally filter by creator."""
     q = db.query(Exam)
     if created_by is not None:
         q = q.filter(Exam.createdBy == created_by)
     exams = q.offset(skip).limit(limit).all()
-    logger.debug("Listed %d exams (skip=%d, limit=%d, created_by=%s)", len(exams), skip, limit, created_by)
+    logger.debug(
+        "Listed %d exams (skip=%d, limit=%d, created_by=%s)",
+        len(exams),
+        skip,
+        limit,
+        created_by,
+    )
     return exams
 
 

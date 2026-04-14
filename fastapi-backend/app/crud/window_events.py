@@ -13,17 +13,34 @@ def create(db: Session, ev_in: WindowEventCreate) -> WindowEstimationLog:
     db.add(ev)
     db.commit()
     db.refresh(ev)
-    logger.info("Window event created: id=%s, email=%s, test_id=%s", ev.wid, ev.email, ev.test_id)
+    logger.info(
+        "Window event created: id=%s, email=%s, test_id=%s",
+        ev.wid,
+        ev.email,
+        ev.test_id,
+    )
     return ev
 
 
-def list_events(db: Session, email: str | None = None, test_id: str | None = None, skip: int = 0, limit: int = 100) -> list[WindowEstimationLog]:
+def list_events(
+    db: Session,
+    email: str | None = None,
+    test_id: str | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[WindowEstimationLog]:
     stmt = select(WindowEstimationLog)
     if email:
         stmt = stmt.where(WindowEstimationLog.email == email)
     if test_id:
         stmt = stmt.where(WindowEstimationLog.test_id == test_id)
-    stmt = stmt.order_by(WindowEstimationLog.transaction_log.desc()).offset(skip).limit(limit)
+    stmt = (
+        stmt.order_by(WindowEstimationLog.transaction_log.desc())
+        .offset(skip)
+        .limit(limit)
+    )
     events = list(db.execute(stmt).scalars().all())
-    logger.debug("Listed %d window events (email=%s, test_id=%s)", len(events), email, test_id)
+    logger.debug(
+        "Listed %d window events (email=%s, test_id=%s)", len(events), email, test_id
+    )
     return events

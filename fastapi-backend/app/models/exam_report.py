@@ -1,4 +1,5 @@
 """ExamReport model – stores generated proctoring reports (Sprint 4)."""
+
 from __future__ import annotations
 
 import uuid
@@ -12,6 +13,7 @@ from app.db.base import Base
 
 class ExamReport(Base):
     """One report per (student, exam) pair.  Generated after exam submission."""
+
     __tablename__ = "exam_reports"
 
     report_id: Mapped[int] = mapped_column(primary_key=True)

@@ -16,7 +16,11 @@ from app.schemas.proctoring import (
     EvidenceUploadResponse,
 )
 from app.services.violation_logger import violation_buffer, classify_violation
-from app.core.storage import build_object_key, generate_presigned_put_url, get_public_object_url
+from app.core.storage import (
+    build_object_key,
+    generate_presigned_put_url,
+    get_public_object_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,7 @@ router = APIRouter(prefix="/proctoring", tags=["proctoring"])
 
 
 # ── Proctoring logs (original) ─────────────────────────
+
 
 @router.get("/logs", response_model=list[ProctoringLogOut])
 def list_logs(
@@ -33,7 +38,13 @@ def list_logs(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    logger.info("Listing proctoring logs: email=%s, test_id=%s, skip=%d, limit=%d", email, test_id, skip, limit)
+    logger.info(
+        "Listing proctoring logs: email=%s, test_id=%s, skip=%d, limit=%d",
+        email,
+        test_id,
+        skip,
+        limit,
+    )
     logs = crud.list_logs(db, email=email, test_id=test_id, skip=skip, limit=limit)
     logger.debug("Returned %d proctoring logs", len(logs))
     return logs
@@ -41,7 +52,9 @@ def list_logs(
 
 @router.post("/logs", response_model=ProctoringLogOut, status_code=201)
 def create_log(payload: ProctoringLogCreate, db: Session = Depends(get_db)):
-    logger.info("Creating proctoring log: email=%s, test_id=%s", payload.email, payload.test_id)
+    logger.info(
+        "Creating proctoring log: email=%s, test_id=%s", payload.email, payload.test_id
+    )
     log = crud.create_proctoring_log(db, payload)
     logger.debug("Proctoring log created: id=%s", log.lid)
     return log
@@ -49,21 +62,29 @@ def create_log(payload: ProctoringLogCreate, db: Session = Depends(get_db)):
 
 # ── Single violation (immediate write — Sprint 2) ─────
 
+
 @router.post("/log_violation", response_model=ViolationOut, status_code=201)
 def log_violation(payload: ViolationCreate, db: Session = Depends(get_db)):
     """Immediate single-violation write for low-frequency events."""
     logger.info(
         "Logging single violation: email=%s, test_id=%s, type=%s",
-        payload.email, payload.test_id, payload.violation_type,
+        payload.email,
+        payload.test_id,
+        payload.violation_type,
     )
     violation = crud.create_violation(db, payload)
-    logger.info("Violation created: id=%s, type=%s", violation.vid, violation.violation_type)
+    logger.info(
+        "Violation created: id=%s, type=%s", violation.vid, violation.violation_type
+    )
     return violation
 
 
 # ── Batch violations (async buffered — Sprint 3) ──────
 
-@router.post("/log_violations_batch", response_model=ViolationBatchResponse, status_code=202)
+
+@router.post(
+    "/log_violations_batch", response_model=ViolationBatchResponse, status_code=202
+)
 def log_violations_batch(payload: ViolationBatchCreate):
     """
     Accept a batch of violations into the async write buffer.
@@ -74,7 +95,11 @@ def log_violations_batch(payload: ViolationBatchCreate):
     logger.info("Batch violations received: count=%d", count)
     for item in payload.violations:
         violation_buffer.enqueue(item.model_dump())
-    logger.debug("Batch enqueued: %d violations, buffer_pending=%d", count, violation_buffer.pending_count)
+    logger.debug(
+        "Batch enqueued: %d violations, buffer_pending=%d",
+        count,
+        violation_buffer.pending_count,
+    )
     return ViolationBatchResponse(
         accepted=count,
         buffered=True,
@@ -83,6 +108,7 @@ def log_violations_batch(payload: ViolationBatchCreate):
 
 
 # ── Flush buffer (force write pending violations to DB) ──
+
 
 @router.post("/flush", status_code=200)
 async def flush_violation_buffer():
@@ -96,6 +122,7 @@ async def flush_violation_buffer():
 
 # ── Violation listing ──────────────────────────────────
 
+
 @router.get("/violations", response_model=list[ViolationOut])
 def list_violations(
     email: str | None = None,
@@ -107,17 +134,26 @@ def list_violations(
 ):
     logger.info(
         "Listing violations: email=%s, test_id=%s, type=%s, skip=%d, limit=%d",
-        email, test_id, violation_type, skip, limit,
+        email,
+        test_id,
+        violation_type,
+        skip,
+        limit,
     )
     violations = crud.list_violations(
-        db, email=email, test_id=test_id,
-        violation_type=violation_type, skip=skip, limit=limit,
+        db,
+        email=email,
+        test_id=test_id,
+        violation_type=violation_type,
+        skip=skip,
+        limit=limit,
     )
     logger.debug("Returned %d violations", len(violations))
     return violations
 
 
 # ── Evidence upload presigned URL (Sprint 3) ──────────
+
 
 @router.post("/evidence/upload-url", response_model=EvidenceUploadResponse)
 def get_evidence_upload_url(payload: EvidenceUploadRequest):
@@ -127,7 +163,9 @@ def get_evidence_upload_url(payload: EvidenceUploadRequest):
     """
     logger.info(
         "Evidence upload URL requested: test_id=%s, email=%s, type=%s",
-        payload.test_id, payload.email, payload.violation_type,
+        payload.test_id,
+        payload.email,
+        payload.violation_type,
     )
     try:
         object_key = build_object_key(
@@ -146,4 +184,6 @@ def get_evidence_upload_url(payload: EvidenceUploadRequest):
         )
     except Exception as exc:
         logger.error("Failed to generate presigned upload URL: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to generate upload URL: {exc}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate upload URL: {exc}"
+        )

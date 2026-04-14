@@ -29,11 +29,11 @@ logger = logging.getLogger(__name__)
 
 # ── Severity weight map (REQ-11) ──────────────────────
 VIOLATION_WEIGHTS: dict[str, int] = {
-    "identity_mismatch": 20,    # HIGH severity
-    "multiple_faces": 30,       # HIGH severity
-    "tab_switch": 15,           # MEDIUM severity
-    "face_absent": 25,          # HIGH severity
-    "audio_violation": 10,      # LOW severity
+    "identity_mismatch": 20,  # HIGH severity
+    "multiple_faces": 30,  # HIGH severity
+    "tab_switch": 15,  # MEDIUM severity
+    "face_absent": 25,  # HIGH severity
+    "audio_violation": 10,  # LOW severity
 }
 
 VIOLATION_SEVERITY: dict[str, str] = {
@@ -86,13 +86,15 @@ def calculate_trust_score(
         severity = VIOLATION_SEVERITY.get(vtype, "UNKNOWN")
         subtotal = weight * count
         penalty += subtotal
-        breakdown.append({
-            "type": vtype,
-            "count": count,
-            "weight": weight,
-            "severity": severity,
-            "subtotal": subtotal,
-        })
+        breakdown.append(
+            {
+                "type": vtype,
+                "count": count,
+                "weight": weight,
+                "severity": severity,
+                "subtotal": subtotal,
+            }
+        )
 
     # Sort breakdown by subtotal descending for readability
     breakdown.sort(key=lambda x: x["subtotal"], reverse=True)
@@ -101,7 +103,11 @@ def calculate_trust_score(
 
     logger.info(
         "Trust score for %s on exam %s: %d (penalty=%d, violations=%d)",
-        email, test_id, trust_score, penalty, total_violations,
+        email,
+        test_id,
+        trust_score,
+        penalty,
+        total_violations,
     )
 
     return {

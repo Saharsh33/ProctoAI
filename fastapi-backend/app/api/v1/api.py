@@ -1,6 +1,14 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, exam, proctoring, window_events, reports, admin
+from app.api.v1.endpoints import (
+    auth,
+    users,
+    exam,
+    proctoring,
+    window_events,
+    reports,
+    admin,
+)
 
 api_router = APIRouter()
 

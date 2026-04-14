@@ -36,19 +36,27 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 # ── Trust Score (standalone, no persistence) ──────────
 
+
 @router.post("/trust-score", response_model=TrustScoreResponse)
 def compute_trust_score(
     payload: TrustScoreRequest,
     db: Session = Depends(get_db),
 ):
     """Compute and return the trust score without generating a full report."""
-    logger.info("Computing trust score: test_id=%s, email=%s", payload.test_id, payload.email)
+    logger.info(
+        "Computing trust score: test_id=%s, email=%s", payload.test_id, payload.email
+    )
     result = calculate_trust_score(db, payload.test_id, payload.email)
-    logger.info("Trust score computed: score=%d, violations=%d", result["trust_score"], result["total_violations"])
+    logger.info(
+        "Trust score computed: score=%d, violations=%d",
+        result["trust_score"],
+        result["total_violations"],
+    )
     return TrustScoreResponse(**result)
 
 
 # ── Generate Report (trust + PDF) ─────────────────────
+
 
 @router.post("/generate", response_model=ExamReportOut, status_code=201)
 def generate_exam_report(
@@ -63,7 +71,12 @@ def generate_exam_report(
     4. Render PDF via ReportLab
     Target: < 2 s.
     """
-    logger.info("Generating report: test_id=%s, email=%s, uid=%s", payload.test_id, payload.email, payload.uid)
+    logger.info(
+        "Generating report: test_id=%s, email=%s, uid=%s",
+        payload.test_id,
+        payload.email,
+        payload.uid,
+    )
     # Optionally look up exam title (test_id is a string UUID)
     exam_title = ""
     try:
@@ -80,11 +93,16 @@ def generate_exam_report(
         uid=str(payload.uid),
         exam_title=exam_title,
     )
-    logger.info("Report generated: report_id=%s, trust_score=%s", report.report_id, report.trust_score)
+    logger.info(
+        "Report generated: report_id=%s, trust_score=%s",
+        report.report_id,
+        report.trust_score,
+    )
     return report
 
 
 # ── List Reports ──────────────────────────────────────
+
 
 @router.get("/", response_model=list[ExamReportSummary])
 def list_reports(
@@ -94,13 +112,22 @@ def list_reports(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    logger.info("Listing reports: test_id=%s, email=%s, skip=%d, limit=%d", test_id, email, skip, limit)
-    reports = crud.list_reports(db, test_id=test_id, email=email, skip=skip, limit=limit)
+    logger.info(
+        "Listing reports: test_id=%s, email=%s, skip=%d, limit=%d",
+        test_id,
+        email,
+        skip,
+        limit,
+    )
+    reports = crud.list_reports(
+        db, test_id=test_id, email=email, skip=skip, limit=limit
+    )
     logger.debug("Returned %d reports", len(reports))
     return reports
 
 
 # ── Get Single Report ─────────────────────────────────
+
 
 @router.get("/{report_id}", response_model=ExamReportOut)
 def get_report(report_id: int, db: Session = Depends(get_db)):
@@ -113,6 +140,7 @@ def get_report(report_id: int, db: Session = Depends(get_db)):
 
 
 # ── Download PDF ──────────────────────────────────────
+
 
 @router.get("/{report_id}/pdf")
 def download_report_pdf(report_id: int, db: Session = Depends(get_db)):

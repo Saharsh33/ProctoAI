@@ -18,5 +18,7 @@ class LongTest(Base):
     ans: Mapped[str] = mapped_column(Text, nullable=False)
     marks: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    uid: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True)
+    uid: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True
+    )
     user = relationship("User", back_populates="longtests")

@@ -16,7 +16,11 @@ class StudentTestInfo(Base):
     email: Mapped[str] = mapped_column(String(100), nullable=False)
     test_id: Mapped[str] = mapped_column(String(100), nullable=False)
     time_left: Mapped[time] = mapped_column(Time, nullable=False)
-    completed: Mapped[int] = mapped_column(SmallInteger, server_default="0", nullable=False)
+    completed: Mapped[int] = mapped_column(
+        SmallInteger, server_default="0", nullable=False
+    )
 
-    uid: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True)
+    uid: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.user_id"), nullable=False, index=True
+    )
     user = relationship("User", back_populates="student_test_infos")

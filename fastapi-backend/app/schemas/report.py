@@ -4,8 +4,8 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
-
 # ── Trust Score ────────────────────────────────────────
+
 
 class TrustScoreBreakdownItem(BaseModel):
     type: str
@@ -27,6 +27,7 @@ class TrustScoreRequest(BaseModel):
 
 
 # ── Exam Report ────────────────────────────────────────
+
 
 class ExamReportCreate(BaseModel):
     test_id: str
@@ -54,6 +55,7 @@ class ExamReportOut(BaseModel):
 
 class ExamReportSummary(BaseModel):
     """Lightweight list item."""
+
     model_config = ConfigDict(from_attributes=True)
 
     report_id: int

@@ -74,7 +74,9 @@ async def _write_batch_with_retry(batch: list[dict]) -> bool:
             elapsed_ms = (time.monotonic() - t0) * 1000
             logger.info(
                 "Batch write OK: %d violations in %.1f ms (attempt %d)",
-                len(batch), elapsed_ms, attempt,
+                len(batch),
+                elapsed_ms,
+                attempt,
             )
             return True
         except Exception as exc:
@@ -83,13 +85,20 @@ async def _write_batch_with_retry(batch: list[dict]) -> bool:
             delay = BASE_DELAY_S * (2 ** (attempt - 1))
             logger.warning(
                 "Batch write failed (attempt %d/%d): %s – retrying in %.1fs",
-                attempt, MAX_RETRIES, exc, delay,
+                attempt,
+                MAX_RETRIES,
+                exc,
+                delay,
             )
             await asyncio.sleep(delay)
         finally:
             if db:
                 db.close()
-    logger.error("Batch write FAILED after %d retries – %d violations lost", MAX_RETRIES, len(batch))
+    logger.error(
+        "Batch write FAILED after %d retries – %d violations lost",
+        MAX_RETRIES,
+        len(batch),
+    )
     return False
 
 

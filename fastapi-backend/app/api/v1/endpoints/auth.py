@@ -23,7 +23,12 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)):
         logger.warning("Signup rejected — email already registered: %s", payload.email)
         raise HTTPException(status_code=409, detail="Email already registered")
     user = crud.create_user(db, payload)
-    logger.info("User created: id=%s, email=%s, role=%s", user.user_id, user.email, user.role.value)
+    logger.info(
+        "User created: id=%s, email=%s, role=%s",
+        user.user_id,
+        user.email,
+        user.role.value,
+    )
     return user
 
 
@@ -46,21 +51,23 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/token", response_model=TokenResponse, include_in_schema=False)
 def token(
-    username: str = Body(...), 
-    password: str = Body(...), 
-    db: Session = Depends(get_db)
+    username: str = Body(...), password: str = Body(...), db: Session = Depends(get_db)
 ):
     """Token endpoint (username = email)."""
     logger.info("Token request for username=%s", username)
     user = crud.authenticate_user(db, username, password)
     if not user:
-        logger.warning("Token request failed — invalid credentials for username=%s", username)
+        logger.warning(
+            "Token request failed — invalid credentials for username=%s", username
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token({"sub": str(user.user_id), "role": user.role.value})
+    access_token = create_access_token(
+        {"sub": str(user.user_id), "role": user.role.value}
+    )
     logger.info("Token issued: user_id=%s", user.user_id)
     return TokenResponse(access_token=access_token)
 

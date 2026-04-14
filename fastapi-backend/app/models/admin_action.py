@@ -11,9 +11,12 @@ from app.db.base import Base
 
 class AdminAction(Base):
     """Audit log for admin actions taken on violations (warn / invalidate / ban)."""
+
     __tablename__ = "admin_actions"
 
-    action_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    action_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
     violation_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("violations.vid"), nullable=False, index=True
     )

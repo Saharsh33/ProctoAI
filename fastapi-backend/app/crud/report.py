@@ -1,4 +1,5 @@
 """CRUD operations for ExamReport (Sprint 4)."""
+
 from __future__ import annotations
 
 import logging
@@ -18,7 +19,10 @@ def create(db: Session, **kwargs) -> ExamReport:
     db.refresh(report)
     logger.info(
         "Report created: id=%s, test_id=%s, email=%s, trust_score=%s",
-        report.report_id, report.test_id, report.email, report.trust_score,
+        report.report_id,
+        report.test_id,
+        report.email,
+        report.trust_score,
     )
     return report
 
@@ -29,9 +33,7 @@ def get_by_id(db: Session, report_id: int) -> ExamReport | None:
     return report
 
 
-def get_by_exam_and_email(
-    db: Session, test_id: str, email: str
-) -> ExamReport | None:
+def get_by_exam_and_email(db: Session, test_id: str, email: str) -> ExamReport | None:
     """Return the latest report for a student on a specific exam."""
     stmt = (
         select(ExamReport)
@@ -40,7 +42,12 @@ def get_by_exam_and_email(
         .limit(1)
     )
     report = db.execute(stmt).scalar_one_or_none()
-    logger.debug("Report lookup by exam+email: test_id=%s, email=%s, found=%s", test_id, email, report is not None)
+    logger.debug(
+        "Report lookup by exam+email: test_id=%s, email=%s, found=%s",
+        test_id,
+        email,
+        report is not None,
+    )
     return report
 
 
@@ -58,7 +65,9 @@ def list_reports(
         stmt = stmt.where(ExamReport.email == email)
     stmt = stmt.order_by(ExamReport.generated_at.desc()).offset(skip).limit(limit)
     reports = list(db.execute(stmt).scalars().all())
-    logger.debug("Listed %d reports (test_id=%s, email=%s)", len(reports), test_id, email)
+    logger.debug(
+        "Listed %d reports (test_id=%s, email=%s)", len(reports), test_id, email
+    )
     return reports
 
 

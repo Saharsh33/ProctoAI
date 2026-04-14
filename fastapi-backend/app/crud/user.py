@@ -49,7 +49,12 @@ def create(db: Session, user_in: UserCreate) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
-    logger.info("Created user: id=%s, email=%s, role=%s", user.user_id, user.email, user.role.value)
+    logger.info(
+        "Created user: id=%s, email=%s, role=%s",
+        user.user_id,
+        user.email,
+        user.role.value,
+    )
     return user
 
 

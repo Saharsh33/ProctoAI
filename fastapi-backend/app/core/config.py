@@ -4,7 +4,9 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     app_name: str = Field(default="MyProctor FastAPI", alias="APP_NAME")
     env: str = Field(default="dev", alias="ENV")
@@ -17,7 +19,9 @@ class Settings(BaseSettings):
     cors_origins: str = Field(default="", alias="CORS_ORIGINS")
 
     secret_key: str = Field(default="change_me", alias="SECRET_KEY")
-    access_token_expire_minutes: int = Field(default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    access_token_expire_minutes: int = Field(
+        default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES"
+    )
 
     # ── MinIO / S3 Evidence Storage (Sprint 3) ────────
     minio_endpoint: str = Field(default="localhost:9000", alias="MINIO_ENDPOINT")
