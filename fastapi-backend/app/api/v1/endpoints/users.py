@@ -1,11 +1,10 @@
 import logging
 
+from app import crud
+from app.api.deps import get_current_user, get_db
+from app.schemas.user import UserCreate, UserOut, UserUpdate
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
-from app.api.deps import get_db, get_current_user
-from app import crud
-from app.schemas.user import UserCreate, UserOut, UserUpdate
 
 logger = logging.getLogger(__name__)
 

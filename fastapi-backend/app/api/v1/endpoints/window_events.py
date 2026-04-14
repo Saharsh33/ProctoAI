@@ -1,11 +1,10 @@
 import logging
 
+from app import crud
+from app.api.deps import get_db
+from app.schemas.window_events import WindowEventCreate, WindowEventOut
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-
-from app.api.deps import get_db
-from app import crud
-from app.schemas.window_events import WindowEventCreate, WindowEventOut
 
 logger = logging.getLogger(__name__)
 

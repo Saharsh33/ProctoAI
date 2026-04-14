@@ -7,11 +7,11 @@ Calculates obtained marks and total marks for a student's exam submission.
 from __future__ import annotations
 
 import logging
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 
-from app.models.student import Student
 from app.models.question import Question
+from app.models.student import Student
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

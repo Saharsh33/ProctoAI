@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from app.models.exam_report import ExamReport
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

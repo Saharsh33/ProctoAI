@@ -1,8 +1,8 @@
 import logging
 import uuid
-from sqlalchemy.orm import Session
 
 from app.models.student import Student
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

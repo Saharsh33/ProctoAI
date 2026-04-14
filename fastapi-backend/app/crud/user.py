@@ -1,12 +1,11 @@
 import logging
 import uuid
 
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-
 from app.core.security import hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

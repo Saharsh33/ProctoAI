@@ -20,10 +20,10 @@ from __future__ import annotations
 import logging
 from collections import Counter
 
-from sqlalchemy import select, func as sa_func
-from sqlalchemy.orm import Session
-
 from app.models.violation import Violation
+from sqlalchemy import func as sa_func
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

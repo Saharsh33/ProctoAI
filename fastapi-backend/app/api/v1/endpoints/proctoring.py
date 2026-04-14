@@ -1,26 +1,25 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
-from app.api.deps import get_db
 from app import crud
-from app.schemas.proctoring import (
-    ProctoringLogCreate,
-    ProctoringLogOut,
-    ViolationCreate,
-    ViolationOut,
-    ViolationBatchCreate,
-    ViolationBatchResponse,
-    EvidenceUploadRequest,
-    EvidenceUploadResponse,
-)
-from app.services.violation_logger import violation_buffer, classify_violation
+from app.api.deps import get_db
 from app.core.storage import (
     build_object_key,
     generate_presigned_put_url,
     get_public_object_url,
 )
+from app.schemas.proctoring import (
+    EvidenceUploadRequest,
+    EvidenceUploadResponse,
+    ProctoringLogCreate,
+    ProctoringLogOut,
+    ViolationBatchCreate,
+    ViolationBatchResponse,
+    ViolationCreate,
+    ViolationOut,
+)
+from app.services.violation_logger import classify_violation, violation_buffer
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

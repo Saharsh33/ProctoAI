@@ -3,9 +3,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import bcrypt
-from jose import JWTError, jwt
-
 from app.core.config import settings
+from jose import JWTError, jwt
 
 logger = logging.getLogger(__name__)
 

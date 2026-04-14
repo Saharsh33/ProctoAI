@@ -1,7 +1,7 @@
-from app.schemas.user import UserCreate, UserUpdate, UserOut
-from app.schemas.teacher import TeacherCreate, TeacherOut
-from app.schemas.question import QuestionCreate, QuestionOut
 from app.schemas.proctoring import ProctoringLogCreate, ProctoringLogOut
+from app.schemas.question import QuestionCreate, QuestionOut
+from app.schemas.teacher import TeacherCreate, TeacherOut
+from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app.schemas.window_events import WindowEventCreate, WindowEventOut
 
 __all__ = [

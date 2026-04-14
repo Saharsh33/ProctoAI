@@ -13,21 +13,20 @@ import logging
 import uuid as _uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
-
-from app.api.deps import get_db
 from app import crud
+from app.api.deps import get_db
 from app.schemas.report import (
-    TrustScoreRequest,
-    TrustScoreResponse,
     ExamReportCreate,
     ExamReportOut,
     ExamReportSummary,
+    TrustScoreRequest,
+    TrustScoreResponse,
 )
-from app.services.trust_score import calculate_trust_score
 from app.services.report_generator import generate_report
+from app.services.trust_score import calculate_trust_score
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

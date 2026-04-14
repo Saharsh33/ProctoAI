@@ -1,14 +1,13 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, Body
-from sqlalchemy.orm import Session
-
-from app.api.deps import get_db, get_current_user, require_role
 from app import crud
+from app.api.deps import get_current_user, get_db, require_role
 from app.core.security import create_access_token
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.user import UserCreate, UserOut
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

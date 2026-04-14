@@ -4,12 +4,10 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import DateTime, Enum, Integer, String, Text, func
-from sqlalchemy import Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.db.base import Base
 from app.models.enums import RoleEnum
+from sqlalchemy import DateTime, Enum, Integer, String, Text, Uuid, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from app.models.admin_action import AdminAction

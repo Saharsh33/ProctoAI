@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import uuid
 
+from app.db.base import Base
 from sqlalchemy import ForeignKey, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.db.base import Base
 
 
 class LongTest(Base):

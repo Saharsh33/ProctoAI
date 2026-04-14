@@ -1,10 +1,10 @@
 import logging
 import uuid
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from app.models.question import Question
 from app.schemas.question import QuestionCreate, QuestionUpdate
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

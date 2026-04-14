@@ -1,11 +1,10 @@
 import logging
 
+from app import crud
+from app.api.deps import get_db
+from app.schemas.question import QuestionCreate, QuestionOut
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-
-from app.api.deps import get_db
-from app import crud
-from app.schemas.question import QuestionCreate, QuestionOut
 
 logger = logging.getLogger(__name__)
 
