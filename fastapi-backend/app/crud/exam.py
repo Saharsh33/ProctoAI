@@ -1,8 +1,11 @@
+import logging
 import uuid
 from sqlalchemy.orm import Session
 
 from app.models.exam import Exam
 from app.schemas.exam import ExamCreate, ExamUpdate
+
+logger = logging.getLogger(__name__)
 
 
 def create(db: Session, exam_in: ExamCreate, created_by: "uuid.UUID | None" = None) -> Exam:
@@ -17,6 +20,7 @@ def create(db: Session, exam_in: ExamCreate, created_by: "uuid.UUID | None" = No
     db.add(exam)
     db.commit()
     db.refresh(exam)
+    logger.info("Exam created: id=%s, title='%s', created_by=%s", exam.examId, exam.title, created_by)
     return exam
 
 
@@ -25,12 +29,19 @@ def list_exams(db: Session, skip: int = 0, limit: int = 100, created_by: "uuid.U
     q = db.query(Exam)
     if created_by is not None:
         q = q.filter(Exam.createdBy == created_by)
-    return q.offset(skip).limit(limit).all()
+    exams = q.offset(skip).limit(limit).all()
+    logger.debug("Listed %d exams (skip=%d, limit=%d, created_by=%s)", len(exams), skip, limit, created_by)
+    return exams
 
 
 def get_by_id(db: Session, exam_id: uuid.UUID) -> Exam | None:
     """Get a single exam by its ID."""
-    return db.query(Exam).filter(Exam.examId == exam_id).first()
+    exam = db.query(Exam).filter(Exam.examId == exam_id).first()
+    if exam:
+        logger.debug("Exam found: id=%s", exam_id)
+    else:
+        logger.debug("Exam not found: id=%s", exam_id)
+    return exam
 
 
 def update(db: Session, exam_id: uuid.UUID, exam_in: ExamUpdate) -> Exam | None:
@@ -45,6 +56,7 @@ def update(db: Session, exam_id: uuid.UUID, exam_in: ExamUpdate) -> Exam | None:
 
     db.commit()
     db.refresh(exam)
+    logger.info("Exam updated: id=%s, fields=%s", exam_id, list(update_data.keys()))
     return exam
 
 
@@ -56,4 +68,5 @@ def delete(db: Session, exam_id: uuid.UUID) -> bool:
 
     db.delete(exam)
     db.commit()
+    logger.info("Exam deleted: id=%s", exam_id)
     return True

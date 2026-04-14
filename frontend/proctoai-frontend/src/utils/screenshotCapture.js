@@ -6,6 +6,8 @@
  * a presigned PUT URL.
  */
 
+import logger from './logger';
+
 /**
  * Capture a single frame from a webcam <video> element.
  *
@@ -21,6 +23,7 @@ export async function captureScreenshot(webcamRef, width = 640, height = 480) {
     // react-webcam exposes getCanvas() which returns an HTMLCanvasElement
     const canvas = webcamRef.current.getCanvas?.();
     if (canvas) {
+      logger.debug('ScreenshotCapture', 'Captured frame via getCanvas()');
       return await canvasToBlob(canvas);
     }
 
@@ -33,9 +36,10 @@ export async function captureScreenshot(webcamRef, width = 640, height = 480) {
     offscreen.height = height;
     const ctx = offscreen.getContext('2d');
     ctx.drawImage(video, 0, 0, width, height);
+    logger.debug('ScreenshotCapture', 'Captured frame via video fallback');
     return await canvasToBlob(offscreen);
   } catch (err) {
-    console.error('[screenshotCapture] Failed to capture frame:', err);
+    logger.error('ScreenshotCapture', 'Failed to capture frame', { error: err.message });
     return null;
   }
 }
@@ -49,14 +53,20 @@ export async function captureScreenshot(webcamRef, width = 640, height = 480) {
  */
 export async function uploadToPresignedUrl(presignedUrl, blob) {
   try {
+    logger.debug('ScreenshotCapture', 'Uploading screenshot to presigned URL');
     const res = await fetch(presignedUrl, {
       method: 'PUT',
       headers: { 'Content-Type': 'image/png' },
       body: blob,
     });
+    if (res.ok) {
+      logger.info('ScreenshotCapture', 'Screenshot uploaded successfully');
+    } else {
+      logger.warn('ScreenshotCapture', `Upload returned non-OK status: ${res.status}`);
+    }
     return res.ok;
   } catch (err) {
-    console.error('[screenshotCapture] Upload failed:', err);
+    logger.error('ScreenshotCapture', 'Upload failed', { error: err.message });
     return false;
   }
 }

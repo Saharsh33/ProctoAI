@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import logger from '../utils/logger';
 
 /**
  * useAudioDetection – Audio Pattern Detection (Sprint 2 – REQ-6)
@@ -38,6 +39,7 @@ export default function useAudioDetection({
   // ── Setup AudioContext & AnalyserNode ───────────────
   const setupAudio = useCallback((mediaStream) => {
     try {
+      logger.info('AudioDetection', 'Setting up AudioContext and AnalyserNode');
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 2048;
@@ -51,9 +53,10 @@ export default function useAudioDetection({
       analyserRef.current = analyser;
       sourceRef.current = source;
 
+      logger.info('AudioDetection', 'AudioContext setup complete');
       return true;
     } catch (err) {
-      console.warn('[AudioDetection] Failed to setup AudioContext:', err);
+      logger.warn('AudioDetection', 'Failed to setup AudioContext', { error: err.message });
       return false;
     }
   }, []);
@@ -110,8 +113,12 @@ export default function useAudioDetection({
     if (!enabled || !stream) return;
 
     const audioTracks = stream.getAudioTracks();
-    if (audioTracks.length === 0) return;
+    if (audioTracks.length === 0) {
+      logger.warn('AudioDetection', 'No audio tracks found in stream');
+      return;
+    }
 
+    logger.info('AudioDetection', 'Starting audio analysis loop');
     const ok = setupAudio(stream);
     if (!ok) return;
 
@@ -130,6 +137,7 @@ export default function useAudioDetection({
           timestamp: Date.now(),
         };
         setViolation(v);
+        logger.warn('AudioDetection', `Audio violation: ${result.reason}`, { db: Math.round(db) });
         if (onViolationRef.current) {
           onViolationRef.current(v);
         }
@@ -141,6 +149,7 @@ export default function useAudioDetection({
     }, ANALYSIS_INTERVAL_MS);
 
     return () => {
+      logger.info('AudioDetection', 'Stopping audio analysis loop');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;

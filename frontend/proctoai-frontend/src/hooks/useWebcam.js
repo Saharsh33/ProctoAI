@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import logger from '../utils/logger';
 
 /**
  * useWebcam – WebRTC Media Capture hook (Sprint 2 – REQ-7)
@@ -27,6 +28,7 @@ export default function useWebcam({ fps = FRAME_FPS, enabled = true } = {}) {
     try {
       setPermissionStatus('pending');
       setErrorMessage('');
+      logger.info('Webcam', 'Requesting media stream (camera + mic)');
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -35,6 +37,10 @@ export default function useWebcam({ fps = FRAME_FPS, enabled = true } = {}) {
 
       setStream(mediaStream);
       setPermissionStatus('granted');
+      logger.info('Webcam', 'Media stream granted', {
+        videoTracks: mediaStream.getVideoTracks().length,
+        audioTracks: mediaStream.getAudioTracks().length,
+      });
 
       // Attach stream to webcamRef if it's a raw <video> element
       if (webcamRef.current && webcamRef.current.tagName === 'VIDEO') {
@@ -46,12 +52,15 @@ export default function useWebcam({ fps = FRAME_FPS, enabled = true } = {}) {
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionStatus('denied');
         setErrorMessage('Camera & microphone access was denied. Please allow access in your browser settings to continue the proctored exam.');
+        logger.warn('Webcam', 'Media permission denied by user');
       } else if (err.name === 'NotFoundError') {
         setPermissionStatus('error');
         setErrorMessage('No camera or microphone found. Please connect a webcam and microphone.');
+        logger.error('Webcam', 'No media devices found');
       } else {
         setPermissionStatus('error');
         setErrorMessage(`Media error: ${err.message}`);
+        logger.error('Webcam', 'Media request failed', { error: err.message, name: err.name });
       }
       return null;
     }
@@ -62,6 +71,7 @@ export default function useWebcam({ fps = FRAME_FPS, enabled = true } = {}) {
     if (stream) {
       stream.getTracks().forEach((t) => t.stop());
       setStream(null);
+      logger.info('Webcam', 'Media stream stopped');
     }
     if (frameIntervalRef.current) {
       clearInterval(frameIntervalRef.current);
@@ -93,6 +103,7 @@ export default function useWebcam({ fps = FRAME_FPS, enabled = true } = {}) {
     if (!enabled || permissionStatus !== 'granted') return;
 
     const interval = 1000 / fps;
+    logger.info('Webcam', `Starting frame extraction: fps=${fps}, interval=${interval}ms`);
     frameIntervalRef.current = setInterval(() => {
       const frame = captureFrame();
       if (frame) setCurrentFrame(frame);
@@ -102,6 +113,7 @@ export default function useWebcam({ fps = FRAME_FPS, enabled = true } = {}) {
       if (frameIntervalRef.current) {
         clearInterval(frameIntervalRef.current);
         frameIntervalRef.current = null;
+        logger.info('Webcam', 'Frame extraction stopped');
       }
     };
   }, [enabled, permissionStatus, fps, captureFrame]);

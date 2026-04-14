@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     minio_bucket: str = Field(default="proctoring-evidence", alias="MINIO_BUCKET")
     minio_secure: bool = Field(default=False, alias="MINIO_SECURE")
 
+    # ── Logging ───────────────────────────────────────
+    log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    log_file: str | None = Field(default=None, alias="LOG_FILE")
+
     def cors_origins_list(self) -> List[str]:
         if not self.cors_origins:
             return []

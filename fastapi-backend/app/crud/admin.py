@@ -1,3 +1,4 @@
+import logging
 import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -5,6 +6,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.admin_action import AdminAction
 from app.models.violation import Violation
 from app.schemas.admin import AdminActionCreate
+
+logger = logging.getLogger(__name__)
 
 
 # ── Admin Action CRUD ────────────────────────────────
@@ -24,6 +27,10 @@ def create_action(
     db.add(action)
     db.commit()
     db.refresh(action)
+    logger.info(
+        "Admin action created: id=%s, type=%s, violation_id=%d, by=%s",
+        action.action_id, action.action_type, payload.violation_id, performed_by,
+    )
     return action
 
 
@@ -41,7 +48,9 @@ def list_actions(
     if performed_by is not None:
         stmt = stmt.where(AdminAction.performed_by == performed_by)
     stmt = stmt.order_by(AdminAction.performed_at.desc()).offset(skip).limit(limit)
-    return list(db.execute(stmt).scalars().all())
+    actions = list(db.execute(stmt).scalars().all())
+    logger.debug("Listed %d admin actions (violation_id=%s, by=%s)", len(actions), violation_id, performed_by)
+    return actions
 
 
 def list_violations_with_actions(
@@ -60,6 +69,7 @@ def list_violations_with_actions(
     stmt = select(Violation).options(joinedload(Violation.admin_actions))
     if allowed_test_ids is not None:
         if not allowed_test_ids:
+            logger.debug("No allowed test IDs — returning empty violations list")
             return []  # admin has no exams → no violations
         stmt = stmt.where(Violation.test_id.in_(allowed_test_ids))
     if email:
@@ -72,7 +82,12 @@ def list_violations_with_actions(
         stmt = stmt.where(Violation.severity == severity)
     stmt = stmt.order_by(Violation.created_at.desc()).offset(skip).limit(limit)
     # unique() required when using joinedload with collections
-    return list(db.execute(stmt).unique().scalars().all())
+    violations = list(db.execute(stmt).unique().scalars().all())
+    logger.debug(
+        "Listed %d violations with actions (email=%s, test_id=%s, type=%s, severity=%s)",
+        len(violations), email, test_id, violation_type, severity,
+    )
+    return violations
 
 
 def count_violations(
@@ -94,4 +109,6 @@ def count_violations(
         stmt = stmt.where(Violation.email == email)
     if test_id:
         stmt = stmt.where(Violation.test_id == test_id)
-    return db.execute(stmt).scalar_one()
+    count = db.execute(stmt).scalar_one()
+    logger.debug("Violation count: %d (email=%s, test_id=%s)", count, email, test_id)
+    return count

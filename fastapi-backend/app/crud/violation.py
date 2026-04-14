@@ -1,8 +1,11 @@
+import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.models.violation import Violation
 from app.schemas.proctoring import ViolationCreate
+
+logger = logging.getLogger(__name__)
 
 
 def create(db: Session, payload: ViolationCreate) -> Violation:
@@ -10,6 +13,10 @@ def create(db: Session, payload: ViolationCreate) -> Violation:
     db.add(violation)
     db.commit()
     db.refresh(violation)
+    logger.info(
+        "Violation created: id=%s, email=%s, test_id=%s, type=%s",
+        violation.vid, violation.email, violation.test_id, violation.violation_type,
+    )
     return violation
 
 
@@ -29,4 +36,9 @@ def list_violations(
     if violation_type:
         stmt = stmt.where(Violation.violation_type == violation_type)
     stmt = stmt.order_by(Violation.created_at.desc()).offset(skip).limit(limit)
-    return list(db.execute(stmt).scalars().all())
+    violations = list(db.execute(stmt).scalars().all())
+    logger.debug(
+        "Listed %d violations (email=%s, test_id=%s, type=%s)",
+        len(violations), email, test_id, violation_type,
+    )
+    return violations

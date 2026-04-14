@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import logger from '../utils/logger';
 
 /**
  * useTabFocusMonitor – Browser Tab-Switch & Focus Monitor (Sprint 2 – REQ-8)
@@ -42,6 +43,8 @@ export default function useTabFocusMonitor({ onViolation, enabled = true } = {})
     setTabSwitchCount((c) => c + 1);
     setLastViolationTime(now);
 
+    logger.warn('TabFocusMonitor', `Tab/focus violation: ${reason}`);
+
     // Show warning banner
     setWarningVisible(true);
     if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
@@ -62,11 +65,15 @@ export default function useTabFocusMonitor({ onViolation, enabled = true } = {})
   useEffect(() => {
     if (!enabled) return;
 
+    logger.info('TabFocusMonitor', 'Enabling tab/focus monitoring');
+
     const handleVisibilityChange = () => {
       const visible = document.visibilityState === 'visible';
       setIsTabVisible(visible);
       if (!visible) {
         fireViolation('Tab became hidden (visibilitychange)');
+      } else {
+        logger.debug('TabFocusMonitor', 'Tab became visible again');
       }
     };
 
@@ -77,6 +84,7 @@ export default function useTabFocusMonitor({ onViolation, enabled = true } = {})
 
     const handleFocus = () => {
       setIsFocused(true);
+      logger.debug('TabFocusMonitor', 'Window regained focus');
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -84,6 +92,7 @@ export default function useTabFocusMonitor({ onViolation, enabled = true } = {})
     window.addEventListener('focus', handleFocus);
 
     return () => {
+      logger.info('TabFocusMonitor', 'Disabling tab/focus monitoring');
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
@@ -119,6 +128,7 @@ export default function useTabFocusMonitor({ onViolation, enabled = true } = {})
   const dismissWarning = useCallback(() => {
     setWarningVisible(false);
     if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
+    logger.debug('TabFocusMonitor', 'Warning dismissed by user');
   }, []);
 
   return {

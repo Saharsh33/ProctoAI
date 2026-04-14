@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,8 @@ from app.schemas.proctoring import (
 from app.services.violation_logger import violation_buffer, classify_violation
 from app.core.storage import build_object_key, generate_presigned_put_url, get_public_object_url
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/proctoring", tags=["proctoring"])
 
 
@@ -29,12 +33,18 @@ def list_logs(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return crud.list_logs(db, email=email, test_id=test_id, skip=skip, limit=limit)
+    logger.info("Listing proctoring logs: email=%s, test_id=%s, skip=%d, limit=%d", email, test_id, skip, limit)
+    logs = crud.list_logs(db, email=email, test_id=test_id, skip=skip, limit=limit)
+    logger.debug("Returned %d proctoring logs", len(logs))
+    return logs
 
 
 @router.post("/logs", response_model=ProctoringLogOut, status_code=201)
 def create_log(payload: ProctoringLogCreate, db: Session = Depends(get_db)):
-    return crud.create_proctoring_log(db, payload)
+    logger.info("Creating proctoring log: email=%s, test_id=%s", payload.email, payload.test_id)
+    log = crud.create_proctoring_log(db, payload)
+    logger.debug("Proctoring log created: id=%s", log.lid)
+    return log
 
 
 # ── Single violation (immediate write — Sprint 2) ─────
@@ -42,7 +52,13 @@ def create_log(payload: ProctoringLogCreate, db: Session = Depends(get_db)):
 @router.post("/log_violation", response_model=ViolationOut, status_code=201)
 def log_violation(payload: ViolationCreate, db: Session = Depends(get_db)):
     """Immediate single-violation write for low-frequency events."""
-    return crud.create_violation(db, payload)
+    logger.info(
+        "Logging single violation: email=%s, test_id=%s, type=%s",
+        payload.email, payload.test_id, payload.violation_type,
+    )
+    violation = crud.create_violation(db, payload)
+    logger.info("Violation created: id=%s, type=%s", violation.vid, violation.violation_type)
+    return violation
 
 
 # ── Batch violations (async buffered — Sprint 3) ──────
@@ -54,12 +70,15 @@ def log_violations_batch(payload: ViolationBatchCreate):
     The buffer flushes to PostgreSQL every 2 seconds with 3× retry.
     Returns 202 Accepted immediately (< 500 ms target).
     """
+    count = len(payload.violations)
+    logger.info("Batch violations received: count=%d", count)
     for item in payload.violations:
         violation_buffer.enqueue(item.model_dump())
+    logger.debug("Batch enqueued: %d violations, buffer_pending=%d", count, violation_buffer.pending_count)
     return ViolationBatchResponse(
-        accepted=len(payload.violations),
+        accepted=count,
         buffered=True,
-        message=f"{len(payload.violations)} violation(s) accepted into write buffer",
+        message=f"{count} violation(s) accepted into write buffer",
     )
 
 
@@ -69,7 +88,9 @@ def log_violations_batch(payload: ViolationBatchCreate):
 async def flush_violation_buffer():
     """Force-flush all pending violations from the async buffer to the DB.
     Called before report generation to ensure all violations are persisted."""
+    logger.info("Manual flush requested, pending=%d", violation_buffer.pending_count)
     count = await violation_buffer._flush()
+    logger.info("Manual flush complete: flushed=%d violations", count)
     return {"flushed": count, "message": f"{count} violation(s) flushed to database"}
 
 
@@ -84,10 +105,16 @@ def list_violations(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return crud.list_violations(
+    logger.info(
+        "Listing violations: email=%s, test_id=%s, type=%s, skip=%d, limit=%d",
+        email, test_id, violation_type, skip, limit,
+    )
+    violations = crud.list_violations(
         db, email=email, test_id=test_id,
         violation_type=violation_type, skip=skip, limit=limit,
     )
+    logger.debug("Returned %d violations", len(violations))
+    return violations
 
 
 # ── Evidence upload presigned URL (Sprint 3) ──────────
@@ -98,6 +125,10 @@ def get_evidence_upload_url(payload: EvidenceUploadRequest):
     Generate a presigned PUT URL so the browser can upload a screenshot
     directly to MinIO (bypasses server bandwidth).
     """
+    logger.info(
+        "Evidence upload URL requested: test_id=%s, email=%s, type=%s",
+        payload.test_id, payload.email, payload.violation_type,
+    )
     try:
         object_key = build_object_key(
             test_id=payload.test_id,
@@ -107,10 +138,12 @@ def get_evidence_upload_url(payload: EvidenceUploadRequest):
         )
         upload_url = generate_presigned_put_url(object_key)
         object_url = get_public_object_url(object_key)
+        logger.info("Presigned URL generated: key=%s", object_key)
         return EvidenceUploadResponse(
             upload_url=upload_url,
             object_key=object_key,
             object_url=object_url,
         )
     except Exception as exc:
+        logger.error("Failed to generate presigned upload URL: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to generate upload URL: {exc}")

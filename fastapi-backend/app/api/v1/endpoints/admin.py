@@ -1,3 +1,4 @@
+import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func as sa_func, distinct
@@ -16,13 +17,17 @@ from app.crud.admin import (
 )
 from app.schemas.admin import AdminActionCreate, AdminActionOut, AdminViolationOut
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def _get_admin_exam_ids(db: Session, admin_user: User) -> list[str]:
     """Return list of exam ID strings for exams created by this admin."""
     rows = db.query(Exam.examId).filter(Exam.createdBy == admin_user.user_id).all()
-    return [str(r[0]) for r in rows]
+    exam_ids = [str(r[0]) for r in rows]
+    logger.debug("Admin %s owns %d exams", admin_user.user_id, len(exam_ids))
+    return exam_ids
 
 
 @router.get("/violations", response_model=list[AdminViolationOut])
@@ -41,8 +46,12 @@ def admin_list_violations(
     Supports filters by email, test_id, violation_type, severity.
     Restricted to admin role.
     """
+    logger.info(
+        "Admin listing violations: admin=%s, email=%s, test_id=%s, type=%s, severity=%s",
+        current_user.user_id, email, test_id, violation_type, severity,
+    )
     admin_exam_ids = _get_admin_exam_ids(db, current_user)
-    return list_violations_with_actions(
+    violations = list_violations_with_actions(
         db,
         email=email,
         test_id=test_id,
@@ -52,6 +61,8 @@ def admin_list_violations(
         limit=limit,
         allowed_test_ids=admin_exam_ids,
     )
+    logger.debug("Returned %d violations for admin %s", len(violations), current_user.user_id)
+    return violations
 
 
 @router.get("/violations/count")
@@ -62,8 +73,10 @@ def admin_count_violations(
     current_user: User = Depends(require_admin),
 ):
     """Return total violation count for dashboard stats (admin's exams only)."""
+    logger.info("Admin counting violations: admin=%s, email=%s, test_id=%s", current_user.user_id, email, test_id)
     admin_exam_ids = _get_admin_exam_ids(db, current_user)
     total = count_violations(db, email=email, test_id=test_id, allowed_test_ids=admin_exam_ids)
+    logger.info("Violation count for admin %s: %d", current_user.user_id, total)
     return {"count": total}
 
 
@@ -77,9 +90,14 @@ def admin_perform_action(
     Records an immutable audit-log entry.
     Only allowed for violations from exams owned by this admin.
     """
+    logger.info(
+        "Admin action: admin=%s, violation_id=%d, action=%s",
+        current_user.user_id, payload.violation_id, payload.action_type,
+    )
     # Validate action_type
     allowed = {"warn", "invalidate", "ban"}
     if payload.action_type not in allowed:
+        logger.warning("Invalid action_type=%s from admin=%s", payload.action_type, current_user.user_id)
         raise HTTPException(
             status_code=400,
             detail=f"action_type must be one of: {', '.join(sorted(allowed))}",
@@ -89,14 +107,24 @@ def admin_perform_action(
     from app.models.violation import Violation
     violation = db.get(Violation, payload.violation_id)
     if not violation:
+        logger.warning("Violation not found: id=%d", payload.violation_id)
         raise HTTPException(status_code=404, detail="Violation not found")
 
     # Verify the violation belongs to one of the admin's exams
     admin_exam_ids = _get_admin_exam_ids(db, current_user)
     if violation.test_id not in admin_exam_ids:
+        logger.warning(
+            "Admin %s attempted action on violation %d from non-owned exam (test_id=%s)",
+            current_user.user_id, payload.violation_id, violation.test_id,
+        )
         raise HTTPException(status_code=403, detail="Violation does not belong to your exams")
 
-    return create_action(db, payload, performed_by=current_user.user_id)
+    action = create_action(db, payload, performed_by=current_user.user_id)
+    logger.info(
+        "Admin action recorded: action_id=%d, type=%s, violation_id=%d, admin=%s",
+        action.action_id, action.action_type, payload.violation_id, current_user.user_id,
+    )
+    return action
 
 
 @router.get("/actions", response_model=list[AdminActionOut])
@@ -108,7 +136,13 @@ def admin_list_actions(
     current_user: User = Depends(require_admin),
 ):
     """List admin action audit log. Optionally filter by violation_id."""
-    return list_actions(db, violation_id=violation_id, skip=skip, limit=limit, performed_by=current_user.user_id)
+    logger.info(
+        "Admin listing actions: admin=%s, violation_id=%s, skip=%d, limit=%d",
+        current_user.user_id, violation_id, skip, limit,
+    )
+    actions = list_actions(db, violation_id=violation_id, skip=skip, limit=limit, performed_by=current_user.user_id)
+    logger.debug("Returned %d actions", len(actions))
+    return actions
 
 
 @router.get("/exam-students")
@@ -123,11 +157,13 @@ def admin_exam_students(
     If test_id is provided, return students for that exam only (if owned).
     Otherwise return a list of the admin's exams with aggregated student data.
     """
+    logger.info("Admin exam-students: admin=%s, test_id=%s", current_user.user_id, test_id)
     admin_exam_ids = _get_admin_exam_ids(db, current_user)
 
     if test_id:
         # Verify this exam belongs to the current admin
         if test_id not in admin_exam_ids:
+            logger.warning("Admin %s denied access to exam %s", current_user.user_id, test_id)
             raise HTTPException(status_code=403, detail="You do not have permission to access this exam")
 
         # Per-student breakdown for a specific exam
@@ -163,6 +199,7 @@ def admin_exam_students(
         except (ValueError, AttributeError):
             exam_title = test_id
 
+        logger.info("Exam-students for exam %s: %d students found", test_id, len(students))
         return {
             "test_id": test_id,
             "exam_title": exam_title,
@@ -179,7 +216,7 @@ def admin_exam_students(
         if admin_exam_ids:
             base_q = base_q.filter(Violation.test_id.in_(admin_exam_ids))
         else:
-            # Admin has no exams, return empty
+            logger.debug("Admin %s has no exams, returning empty", current_user.user_id)
             return []
 
         rows = base_q.group_by(Violation.test_id).all()
@@ -198,4 +235,5 @@ def admin_exam_students(
                 "total_violations": total_violations,
             })
 
+        logger.info("Exam-students overview for admin %s: %d exams", current_user.user_id, len(result))
         return result

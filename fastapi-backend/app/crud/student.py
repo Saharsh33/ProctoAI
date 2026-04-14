@@ -1,7 +1,10 @@
+import logging
 import uuid
 from sqlalchemy.orm import Session
 
 from app.models.student import Student
+
+logger = logging.getLogger(__name__)
 
 
 def create_answer(db: Session, uid: uuid.UUID, exam_id: uuid.UUID, test_id: str, qid: str, answer: str, email: str) -> Student:
@@ -15,12 +18,14 @@ def create_answer(db: Session, uid: uuid.UUID, exam_id: uuid.UUID, test_id: str,
 
     if existing:
         # Update existing answer
+        logger.debug("Updating existing answer: uid=%s, exam=%s, qid=%s", uid, exam_id, qid)
         existing.ans = answer
         db.commit()
         db.refresh(existing)
         return existing
     else:
         # Create new answer
+        logger.debug("Creating new answer: uid=%s, exam=%s, qid=%s", uid, exam_id, qid)
         answer_record = Student(
             uid=uid,
             email=email,
@@ -37,7 +42,9 @@ def create_answer(db: Session, uid: uuid.UUID, exam_id: uuid.UUID, test_id: str,
 
 def get_student_answers(db: Session, uid: uuid.UUID, exam_id: uuid.UUID) -> list[Student]:
     """Get all answers submitted by a student for a specific exam."""
-    return db.query(Student).filter(
+    answers = db.query(Student).filter(
         Student.uid == uid,
         Student.examId == exam_id
     ).all()
+    logger.debug("Retrieved %d answers: uid=%s, exam=%s", len(answers), uid, exam_id)
+    return answers

@@ -1,10 +1,13 @@
 """CRUD operations for ExamReport (Sprint 4)."""
 from __future__ import annotations
 
+import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.models.exam_report import ExamReport
+
+logger = logging.getLogger(__name__)
 
 
 def create(db: Session, **kwargs) -> ExamReport:
@@ -13,11 +16,17 @@ def create(db: Session, **kwargs) -> ExamReport:
     db.add(report)
     db.commit()
     db.refresh(report)
+    logger.info(
+        "Report created: id=%s, test_id=%s, email=%s, trust_score=%s",
+        report.report_id, report.test_id, report.email, report.trust_score,
+    )
     return report
 
 
 def get_by_id(db: Session, report_id: int) -> ExamReport | None:
-    return db.get(ExamReport, report_id)
+    report = db.get(ExamReport, report_id)
+    logger.debug("Report lookup: id=%s, found=%s", report_id, report is not None)
+    return report
 
 
 def get_by_exam_and_email(
@@ -30,7 +39,9 @@ def get_by_exam_and_email(
         .order_by(ExamReport.generated_at.desc())
         .limit(1)
     )
-    return db.execute(stmt).scalar_one_or_none()
+    report = db.execute(stmt).scalar_one_or_none()
+    logger.debug("Report lookup by exam+email: test_id=%s, email=%s, found=%s", test_id, email, report is not None)
+    return report
 
 
 def list_reports(
@@ -46,7 +57,9 @@ def list_reports(
     if email:
         stmt = stmt.where(ExamReport.email == email)
     stmt = stmt.order_by(ExamReport.generated_at.desc()).offset(skip).limit(limit)
-    return list(db.execute(stmt).scalars().all())
+    reports = list(db.execute(stmt).scalars().all())
+    logger.debug("Listed %d reports (test_id=%s, email=%s)", len(reports), test_id, email)
+    return reports
 
 
 def update_pdf_path(db: Session, report_id: int, pdf_path: str) -> ExamReport | None:
@@ -55,4 +68,7 @@ def update_pdf_path(db: Session, report_id: int, pdf_path: str) -> ExamReport | 
         report.pdf_path = pdf_path
         db.commit()
         db.refresh(report)
+        logger.info("Report PDF path updated: id=%s, path=%s", report_id, pdf_path)
+    else:
+        logger.warning("Report not found for PDF path update: id=%s", report_id)
     return report

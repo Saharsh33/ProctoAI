@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
+import logger from '../utils/logger';
 
 /**
  * useFaceDetection – Accurate Face Detection via MediaPipe BlazeFace (Sprint 2 – REQ-4/5)
@@ -24,6 +25,7 @@ async function getDetector() {
   if (!detectorPromise) {
     detectorPromise = (async () => {
       try {
+        logger.info('FaceDetection', 'Initializing MediaPipe FaceDetector...');
         const vision = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
         );
@@ -36,9 +38,10 @@ async function getDetector() {
           runningMode: 'IMAGE',
           minDetectionConfidence: MIN_DETECTION_CONFIDENCE,
         });
+        logger.info('FaceDetection', 'MediaPipe FaceDetector initialized successfully');
         return detector;
       } catch (err) {
-        console.error('[FaceDetection] Failed to initialize MediaPipe detector:', err);
+        logger.error('FaceDetection', 'Failed to initialize MediaPipe detector', { error: err.message });
         detectorPromise = null; // allow retry
         return null;
       }
@@ -65,7 +68,7 @@ export async function detectFaces(imageData) {
     const result = detector.detect(canvas);
     return result.detections || [];
   } catch (err) {
-    console.warn('[FaceDetection] Detection error:', err);
+    logger.warn('FaceDetection', 'Detection error', { error: err.message });
     return [];
   }
 }
@@ -101,8 +104,12 @@ export default function useFaceDetection({
   // Pre-load the detector when the hook is first enabled
   useEffect(() => {
     if (enabled && !detectorReadyRef.current) {
+      logger.info('FaceDetection', 'Pre-loading face detector');
       getDetector().then((d) => {
-        if (d) detectorReadyRef.current = true;
+        if (d) {
+          detectorReadyRef.current = true;
+          logger.info('FaceDetection', 'Face detector ready');
+        }
       });
     }
   }, [enabled]);
@@ -124,6 +131,7 @@ export default function useFaceDetection({
 
         // ── Multiple faces violation ──────────────────
         if (count > 1 && onViolation) {
+          logger.warn('FaceDetection', `Multiple faces detected: count=${count}`);
           onViolation({
             type: 'multiple_faces',
             message: `Multiple faces detected (${count})`,
@@ -140,6 +148,7 @@ export default function useFaceDetection({
             if (absentSinceRef.current === null) {
               absentSinceRef.current = Date.now();
               setAbsentSince(Date.now());
+              logger.info('FaceDetection', 'Face absence started');
             } else {
               const elapsed = Date.now() - absentSinceRef.current;
               if (elapsed >= absenceThresholdMs && !violationFiredRef.current) {
@@ -151,12 +160,16 @@ export default function useFaceDetection({
                   timestamp: Date.now(),
                 };
                 setViolation(v);
+                logger.warn('FaceDetection', `Face absent violation: ${Math.round(elapsed / 1000)}s`);
                 if (onViolation) onViolation(v);
               }
             }
           }
         } else {
           // Face returned – reset absence tracking
+          if (consecutiveMissRef.current >= MISS_THRESHOLD) {
+            logger.info('FaceDetection', 'Face returned after absence');
+          }
           consecutiveMissRef.current = 0;
           absentSinceRef.current = null;
           violationFiredRef.current = false;
@@ -164,7 +177,7 @@ export default function useFaceDetection({
           setViolation(null);
         }
       } catch (err) {
-        console.warn('[FaceDetection] Frame processing error:', err);
+        logger.warn('FaceDetection', 'Frame processing error', { error: err.message });
       } finally {
         processingRef.current = false;
       }
