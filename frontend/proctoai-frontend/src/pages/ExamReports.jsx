@@ -33,6 +33,34 @@ const TrustScoreGauge = ({ score }) => {
   );
 };
 
+// ── Marks Display Card ────────────────────────────────
+const MarksDisplay = ({ obtained, total }) => {
+  if (!total || total === 0) return null;
+  
+  const percentage = Math.round((obtained / total) * 100);
+  const color = percentage >= 70 ? '#10b981' : percentage >= 40 ? '#f59e0b' : '#ef4444';
+  const label = percentage >= 70 ? 'Excellent' : percentage >= 40 ? 'Average' : 'Below Average';
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <svg width="140" height="140" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="54" fill="none" stroke="#e2e8f0" strokeWidth="8" />
+        <circle
+          cx="60" cy="60" r="54" fill="none"
+          stroke={color} strokeWidth="8" strokeLinecap="round"
+          strokeDasharray={2 * Math.PI * 54}
+          strokeDashoffset={2 * Math.PI * 54 - (percentage / 100) * 2 * Math.PI * 54}
+          style={{ transform: 'rotate(-90deg)', transformOrigin: '60px 60px', transition: 'stroke-dashoffset 1s ease' }}
+        />
+        <text x="60" y="55" textAnchor="middle" fontSize="28" fontWeight="700" fill={color}>{percentage}</text>
+        <text x="60" y="72" textAnchor="middle" fontSize="10" fill="#94a3b8">%</text>
+      </svg>
+      <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color }}>{label}</div>
+      <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>{obtained}/{total}</div>
+    </div>
+  );
+};
+
 // ── Violation Breakdown Card ──────────────────────────
 const BreakdownTable = ({ breakdown }) => {
   if (!breakdown || breakdown.length === 0) {
@@ -221,6 +249,9 @@ const ExamReports = () => {
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {reports.map((r) => {
                   const scoreColor = r.trust_score >= 70 ? '#10b981' : r.trust_score >= 40 ? '#f59e0b' : '#ef4444';
+                  const marksPercentage = r.total_marks > 0 ? Math.round((r.obtained_marks / r.total_marks) * 100) : 0;
+                  const marksColor = marksPercentage >= 70 ? '#10b981' : marksPercentage >= 40 ? '#f59e0b' : '#ef4444';
+                  
                   return (
                     <div
                       key={r.report_id}
@@ -231,8 +262,8 @@ const ExamReports = () => {
                         border: selectedReport?.report_id === r.report_id ? '2px solid var(--primary)' : undefined,
                       }}
                     >
-                      <div className="card-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
+                      <div className="card-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem' }}>
                             {r.email}
                           </div>
@@ -242,12 +273,28 @@ const ExamReports = () => {
                           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
                             {new Date(r.generated_at).toLocaleString()} · {r.total_violations} violation{r.total_violations !== 1 ? 's' : ''}
                           </div>
+                          {r.total_marks > 0 && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                              📊 Marks: <span style={{ fontWeight: 600, color: marksColor }}>{r.obtained_marks}/{r.total_marks}</span>
+                            </div>
+                          )}
                         </div>
-                        <div style={{
-                          fontSize: '1.5rem', fontWeight: 700, color: scoreColor,
-                          minWidth: 50, textAlign: 'center',
-                        }}>
-                          {r.trust_score}
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          {r.total_marks > 0 && (
+                            <div style={{
+                              fontSize: '1.125rem', fontWeight: 700, color: marksColor,
+                              minWidth: 45, textAlign: 'center', padding: '0.5rem',
+                              background: `${marksColor}15`, borderRadius: '0.375rem',
+                            }}>
+                              {marksPercentage}%
+                            </div>
+                          )}
+                          <div style={{
+                            fontSize: '1.5rem', fontWeight: 700, color: scoreColor,
+                            minWidth: 50, textAlign: 'center',
+                          }}>
+                            {r.trust_score}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -274,6 +321,15 @@ const ExamReports = () => {
                   </div>
 
                   <TrustScoreGauge score={selectedReport.trust_score} />
+
+                  {(selectedReport.total_marks > 0 || selectedReport.obtained_marks >= 0) && (
+                    <div style={{ margin: '1.25rem 0' }}>
+                      <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '0.5rem' }}>Exam Performance</h3>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <MarksDisplay obtained={selectedReport.obtained_marks} total={selectedReport.total_marks} />
+                      </div>
+                    </div>
+                  )}
 
                   <div style={{ margin: '1.25rem 0' }}>
                     <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '0.5rem' }}>Violation Breakdown</h3>

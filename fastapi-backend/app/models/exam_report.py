@@ -23,6 +23,10 @@ class ExamReport(Base):
     total_violations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     penalty: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    # ── Exam marks ─────────────────────────────────
+    obtained_marks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_marks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     # ── JSON blobs for the full breakdown ──────────
     violation_breakdown_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     # e.g. [{"type":"tab_switch","count":3,"weight":20,"subtotal":60}, ...]

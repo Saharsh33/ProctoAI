@@ -29,11 +29,19 @@ logger = logging.getLogger(__name__)
 
 # ── Severity weight map (REQ-11) ──────────────────────
 VIOLATION_WEIGHTS: dict[str, int] = {
-    "face_absent": 30,
-    "multiple_faces": 40,
-    "tab_switch": 20,
-    "audio_violation": 10,
-    "identity_mismatch": 50,   # bonus – not in spec but logically critical
+    "identity_mismatch": 20,    # HIGH severity
+    "multiple_faces": 30,       # HIGH severity
+    "tab_switch": 15,           # MEDIUM severity
+    "face_absent": 25,          # HIGH severity
+    "audio_violation": 10,      # LOW severity
+}
+
+VIOLATION_SEVERITY: dict[str, str] = {
+    "identity_mismatch": "HIGH",
+    "multiple_faces": "HIGH",
+    "tab_switch": "MEDIUM",
+    "face_absent": "HIGH",
+    "audio_violation": "LOW",
 }
 
 DEFAULT_WEIGHT = 5  # unknown violation types get a small penalty
@@ -65,7 +73,7 @@ def calculate_trust_score(
     Returns a dict with:
         trust_score    – int  0-100
         penalty        – int  total deducted
-        breakdown      – list of {type, count, weight, subtotal}
+        breakdown      – list of {type, count, weight, severity, subtotal}
         total_violations – int
     """
     counts = get_violation_counts(db, test_id, email)
@@ -75,12 +83,14 @@ def calculate_trust_score(
     penalty = 0
     for vtype, count in counts.items():
         weight = VIOLATION_WEIGHTS.get(vtype, DEFAULT_WEIGHT)
+        severity = VIOLATION_SEVERITY.get(vtype, "UNKNOWN")
         subtotal = weight * count
         penalty += subtotal
         breakdown.append({
             "type": vtype,
             "count": count,
             "weight": weight,
+            "severity": severity,
             "subtotal": subtotal,
         })
 

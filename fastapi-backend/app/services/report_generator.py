@@ -34,6 +34,7 @@ from reportlab.platypus import (
 from sqlalchemy.orm import Session
 
 from app.services.trust_score import calculate_trust_score
+from app.services.score_calculator import calculate_exam_score
 from app.crud.report import create as create_report, get_by_exam_and_email, update_pdf_path
 from app.models.exam_report import ExamReport
 
@@ -57,10 +58,11 @@ def generate_report(
     Generate (or regenerate) a proctoring report for a student exam session.
 
     1. Calculate trust score from violations table
-    2. Build human-readable summary
-    3. Persist ExamReport row
-    4. Generate PDF and store path
-    5. Return the ExamReport object
+    2. Calculate exam marks (obtained vs total)
+    3. Build human-readable summary
+    4. Persist ExamReport row
+    5. Generate PDF and store path
+    6. Return the ExamReport object
 
     Target: < 2 s total.
     """
@@ -69,16 +71,21 @@ def generate_report(
     # 1. Trust score
     score_data = calculate_trust_score(db, test_id, email)
 
-    # 2. Summary text
-    summary = _build_summary(email, test_id, exam_title, score_data)
+    # 2. Calculate exam marks
+    marks_data = calculate_exam_score(db, uid, test_id)
 
-    # 3. Check if report already exists (regenerate case)
+    # 3. Summary text
+    summary = _build_summary(email, test_id, exam_title, score_data, marks_data)
+
+    # 4. Check if report already exists (regenerate case)
     existing = get_by_exam_and_email(db, test_id, email)
     if existing:
         existing.trust_score = score_data["trust_score"]
         existing.total_violations = score_data["total_violations"]
         existing.penalty = score_data["penalty"]
         existing.violation_breakdown_json = json.dumps(score_data["breakdown"])
+        existing.obtained_marks = marks_data["obtained_marks"]
+        existing.total_marks = marks_data["total_marks"]
         existing.summary = summary
         db.commit()
         db.refresh(existing)
@@ -93,18 +100,21 @@ def generate_report(
             total_violations=score_data["total_violations"],
             penalty=score_data["penalty"],
             violation_breakdown_json=json.dumps(score_data["breakdown"]),
+            obtained_marks=marks_data["obtained_marks"],
+            total_marks=marks_data["total_marks"],
             summary=summary,
         )
 
-    # 4. Generate PDF
-    pdf_path = export_pdf(report, exam_title, score_data)
+    # 5. Generate PDF
+    pdf_path = export_pdf(report, exam_title, score_data, marks_data)
     update_pdf_path(db, report.report_id, str(pdf_path))
     report.pdf_path = str(pdf_path)
 
     elapsed_ms = (time.monotonic() - t0) * 1000
     logger.info(
-        "Report generated for %s on exam %s in %.0f ms (trust_score=%d)",
+        "Report generated for %s on exam %s in %.0f ms (trust_score=%d, marks=%d/%d)",
         email, test_id, elapsed_ms, score_data["trust_score"],
+        marks_data["obtained_marks"], marks_data["total_marks"],
     )
 
     return report
@@ -116,6 +126,7 @@ def export_pdf(
     report: ExamReport,
     exam_title: str,
     score_data: dict,
+    marks_data: dict | None = None,
 ) -> Path:
     """
     Render a professional PDF proctoring report.
@@ -195,6 +206,25 @@ def export_pdf(
     ))
     elements.append(Spacer(1, 10))
 
+    # ── Exam Marks ──
+    if marks_data and marks_data.get("total_marks", 0) > 0:
+        elements.append(Paragraph("Exam Performance", styles["SectionHead"]))
+        obtained = marks_data["obtained_marks"]
+        total_marks = marks_data["total_marks"]
+        percentage = marks_data.get("percentage", 0)
+        correct = marks_data.get("correct_count", 0)
+        total_questions = marks_data.get("total_count", 0)
+        
+        marks_color = "#10b981" if percentage >= 70 else "#f59e0b" if percentage >= 40 else "#ef4444"
+        elements.append(Paragraph(
+            f'<font size="24" color="{marks_color}"><b>{obtained}</b></font>'
+            f'<font size="12" color="#94a3b8"> / {total_marks}</font>'
+            f'&nbsp;&nbsp;&nbsp;<font size="10" color="#64748b">'
+            f'({percentage}%  |  {correct}/{total_questions} correct)</font>',
+            styles["Body"],
+        ))
+        elements.append(Spacer(1, 10))
+
     # ── Violation Breakdown Table ──
     elements.append(Paragraph("Violation Breakdown", styles["SectionHead"]))
 
@@ -263,20 +293,28 @@ def export_pdf(
 
 # ── Helpers ────────────────────────────────────────────
 
-def _build_summary(email: str, test_id: str, exam_title: str, score_data: dict) -> str:
+def _build_summary(email: str, test_id: str, exam_title: str, score_data: dict, marks_data: dict | None = None) -> str:
     """Generate a human-readable summary paragraph."""
     trust = score_data["trust_score"]
     total = score_data["total_violations"]
     breakdown = score_data.get("breakdown", [])
 
+    # Build summary with marks if available
+    marks_str = ""
+    if marks_data and marks_data.get("total_marks", 0) > 0:
+        obtained = marks_data["obtained_marks"]
+        total_marks = marks_data["total_marks"]
+        percentage = marks_data.get("percentage", 0)
+        marks_str = f" Obtained marks: {obtained}/{total_marks} ({percentage}%)."
+
     if total == 0:
         return (
             f"Student {email} completed exam '{exam_title or test_id}' with no violations. "
-            f"Trust score: {trust}/100. Excellent conduct throughout the session."
+            f"Trust score: {trust}/100. Excellent conduct throughout the session.{marks_str}"
         )
 
     parts = [
-        f"Student {email} completed exam '{exam_title or test_id}' with a trust score of {trust}/100.",
+        f"Student {email} completed exam '{exam_title or test_id}' with a trust score of {trust}/100.{marks_str}",
         f"A total of {total} violation(s) were detected during the session.",
     ]
 

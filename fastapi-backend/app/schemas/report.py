@@ -43,6 +43,8 @@ class ExamReportOut(BaseModel):
     trust_score: int
     total_violations: int
     penalty: int
+    obtained_marks: int
+    total_marks: int
     violation_breakdown_json: str | None = None
     summary: str | None = None
     pdf_path: str | None = None
@@ -59,4 +61,6 @@ class ExamReportSummary(BaseModel):
     email: str
     trust_score: int
     total_violations: int
+    obtained_marks: int
+    total_marks: int
     generated_at: datetime
