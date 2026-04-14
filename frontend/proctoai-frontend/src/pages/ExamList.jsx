@@ -84,8 +84,8 @@ const ExamList = () => {
         <Sidebar />
         <main className="main-content">
           <div className="page-header">
-            <h1 className="page-title">All Exams</h1>
-            <p className="page-subtitle">Manage and monitor all examinations</p>
+            <h1 className="page-title">My Exams</h1>
+            <p className="page-subtitle">Manage your examinations</p>
           </div>
 
           {loading ? (

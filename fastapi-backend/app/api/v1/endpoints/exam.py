@@ -6,11 +6,21 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_user, require_role
 from app import crud
 from app.models.user import User
+from app.models.exam import Exam
 from app.schemas.exam import ExamCreate, ExamUpdate, ExamOut
 from app.schemas.question import QuestionCreate, QuestionUpdate, QuestionOut
 from app.schemas.exam_submission import ExamSubmission, ExamSubmissionResponse
 
 router = APIRouter(prefix="/exam", tags=["exam"])
+
+
+def _check_admin_owns_exam(exam: Exam, admin: User) -> None:
+    """Raise 403 if the admin did not create this exam."""
+    if exam.createdBy != admin.user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to access this exam",
+        )
 
 
 @router.post("/create", response_model=ExamOut, status_code=201)
@@ -59,10 +69,13 @@ def get_exam(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get a single exam by ID. Accessible to both admin and student."""
+    """Get a single exam by ID. Admin can only see their own exams."""
     exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
+    # Admin can only access exams they created
+    if current_user.role.value == "admin":
+        _check_admin_owns_exam(exam, current_user)
     return exam
 
 
@@ -74,11 +87,14 @@ def list_exam_questions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List all questions for a specific exam. Accessible to both admin and student."""
+    """List all questions for a specific exam. Admin can only see their own exams."""
     # Verify exam exists
     exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
+    # Admin can only access exams they created
+    if current_user.role.value == "admin":
+        _check_admin_owns_exam(exam, current_user)
     return crud.list_questions_by_exam(db, exam_id, skip=skip, limit=limit)
 
 
@@ -89,11 +105,13 @@ def add_question_to_exam(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    """Add a question to an exam. Restricted to admin role only."""
+    """Add a question to an exam. Admin can only add to their own exams."""
     # Verify exam exists
     exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
+    # Admin can only modify exams they created
+    _check_admin_owns_exam(exam, current_user)
 
     # Ensure the question is associated with this exam
     payload.examId = exam_id
@@ -152,11 +170,17 @@ def update_exam(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    """Update an exam. Restricted to admin role only."""
-    exam = crud.update_exam(db, exam_id, payload)
+    """Update an exam. Admin can only update their own exams."""
+    # Verify ownership before updating
+    exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
-    return exam
+    _check_admin_owns_exam(exam, current_user)
+
+    updated = crud.update_exam(db, exam_id, payload)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Exam not found")
+    return updated
 
 
 @router.delete("/{exam_id}", status_code=204)
@@ -165,7 +189,13 @@ def delete_exam(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    """Delete an exam. Restricted to admin role only."""
+    """Delete an exam. Admin can only delete their own exams."""
+    # Verify ownership before deleting
+    exam = crud.get_exam_by_id(db, exam_id)
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+    _check_admin_owns_exam(exam, current_user)
+
     success = crud.delete_exam(db, exam_id)
     if not success:
         raise HTTPException(status_code=404, detail="Exam not found")
@@ -180,11 +210,12 @@ def update_question(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    """Update a question in an exam. Restricted to admin role only."""
-    # Verify exam exists
+    """Update a question in an exam. Admin can only modify their own exams."""
+    # Verify exam exists and admin owns it
     exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
+    _check_admin_owns_exam(exam, current_user)
 
     # Update the question
     question = crud.update_question(db, question_id, payload)
@@ -205,11 +236,12 @@ def delete_question(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin")),
 ):
-    """Delete a question from an exam. Restricted to admin role only."""
-    # Verify exam exists
+    """Delete a question from an exam. Admin can only modify their own exams."""
+    # Verify exam exists and admin owns it
     exam = crud.get_exam_by_id(db, exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
+    _check_admin_owns_exam(exam, current_user)
 
     # Verify question exists and belongs to this exam
     question = crud.get_question_by_id(db, question_id)

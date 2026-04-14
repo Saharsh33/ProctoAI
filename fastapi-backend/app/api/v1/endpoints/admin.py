@@ -19,6 +19,12 @@ from app.schemas.admin import AdminActionCreate, AdminActionOut, AdminViolationO
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+def _get_admin_exam_ids(db: Session, admin_user: User) -> list[str]:
+    """Return list of exam ID strings for exams created by this admin."""
+    rows = db.query(Exam.examId).filter(Exam.createdBy == admin_user.user_id).all()
+    return [str(r[0]) for r in rows]
+
+
 @router.get("/violations", response_model=list[AdminViolationOut])
 def admin_list_violations(
     email: str | None = None,
@@ -30,10 +36,12 @@ def admin_list_violations(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    """List all violations with their admin action history.
+    """List violations with their admin action history.
+    Only shows violations from exams created by the current admin.
     Supports filters by email, test_id, violation_type, severity.
     Restricted to admin role.
     """
+    admin_exam_ids = _get_admin_exam_ids(db, current_user)
     return list_violations_with_actions(
         db,
         email=email,
@@ -42,6 +50,7 @@ def admin_list_violations(
         severity=severity,
         skip=skip,
         limit=limit,
+        allowed_test_ids=admin_exam_ids,
     )
 
 
@@ -52,8 +61,9 @@ def admin_count_violations(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    """Return total violation count for dashboard stats."""
-    total = count_violations(db, email=email, test_id=test_id)
+    """Return total violation count for dashboard stats (admin's exams only)."""
+    admin_exam_ids = _get_admin_exam_ids(db, current_user)
+    total = count_violations(db, email=email, test_id=test_id, allowed_test_ids=admin_exam_ids)
     return {"count": total}
 
 
@@ -65,6 +75,7 @@ def admin_perform_action(
 ):
     """Perform an admin action (warn / invalidate / ban) on a violation.
     Records an immutable audit-log entry.
+    Only allowed for violations from exams owned by this admin.
     """
     # Validate action_type
     allowed = {"warn", "invalidate", "ban"}
@@ -80,6 +91,11 @@ def admin_perform_action(
     if not violation:
         raise HTTPException(status_code=404, detail="Violation not found")
 
+    # Verify the violation belongs to one of the admin's exams
+    admin_exam_ids = _get_admin_exam_ids(db, current_user)
+    if violation.test_id not in admin_exam_ids:
+        raise HTTPException(status_code=403, detail="Violation does not belong to your exams")
+
     return create_action(db, payload, performed_by=current_user.user_id)
 
 
@@ -92,7 +108,7 @@ def admin_list_actions(
     current_user: User = Depends(require_admin),
 ):
     """List admin action audit log. Optionally filter by violation_id."""
-    return list_actions(db, violation_id=violation_id, skip=skip, limit=limit)
+    return list_actions(db, violation_id=violation_id, skip=skip, limit=limit, performed_by=current_user.user_id)
 
 
 @router.get("/exam-students")
@@ -103,10 +119,17 @@ def admin_exam_students(
 ):
     """
     Return per-exam, per-student summary: email, violation count, trust score.
-    If test_id is provided, return students for that exam only.
-    Otherwise return a list of exams with aggregated student data.
+    Only includes exams created by the current admin.
+    If test_id is provided, return students for that exam only (if owned).
+    Otherwise return a list of the admin's exams with aggregated student data.
     """
+    admin_exam_ids = _get_admin_exam_ids(db, current_user)
+
     if test_id:
+        # Verify this exam belongs to the current admin
+        if test_id not in admin_exam_ids:
+            raise HTTPException(status_code=403, detail="You do not have permission to access this exam")
+
         # Per-student breakdown for a specific exam
         rows = (
             db.query(
@@ -146,16 +169,20 @@ def admin_exam_students(
             "students": students,
         }
     else:
-        # Overview: list of exams with student counts and violation counts
-        rows = (
-            db.query(
-                Violation.test_id,
-                sa_func.count(distinct(Violation.email)).label("student_count"),
-                sa_func.count(Violation.vid).label("total_violations"),
-            )
-            .group_by(Violation.test_id)
-            .all()
+        # Overview: list of admin's exams with student counts and violation counts
+        base_q = db.query(
+            Violation.test_id,
+            sa_func.count(distinct(Violation.email)).label("student_count"),
+            sa_func.count(Violation.vid).label("total_violations"),
         )
+        # Only include violations from this admin's exams
+        if admin_exam_ids:
+            base_q = base_q.filter(Violation.test_id.in_(admin_exam_ids))
+        else:
+            # Admin has no exams, return empty
+            return []
+
+        rows = base_q.group_by(Violation.test_id).all()
 
         result = []
         for test_id, student_count, total_violations in rows:

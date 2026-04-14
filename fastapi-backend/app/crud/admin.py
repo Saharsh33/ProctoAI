@@ -52,9 +52,16 @@ def list_violations_with_actions(
     severity: str | None = None,
     skip: int = 0,
     limit: int = 100,
+    allowed_test_ids: list[str] | None = None,
 ) -> list[Violation]:
-    """List violations with eagerly loaded admin_actions for the admin dashboard."""
+    """List violations with eagerly loaded admin_actions for the admin dashboard.
+    When allowed_test_ids is provided, only violations from those exams are returned.
+    """
     stmt = select(Violation).options(joinedload(Violation.admin_actions))
+    if allowed_test_ids is not None:
+        if not allowed_test_ids:
+            return []  # admin has no exams → no violations
+        stmt = stmt.where(Violation.test_id.in_(allowed_test_ids))
     if email:
         stmt = stmt.where(Violation.email == email)
     if test_id:
@@ -72,10 +79,17 @@ def count_violations(
     db: Session,
     email: str | None = None,
     test_id: str | None = None,
+    allowed_test_ids: list[str] | None = None,
 ) -> int:
-    """Return total violation count (for dashboard stats)."""
+    """Return total violation count (for dashboard stats).
+    When allowed_test_ids is provided, only violations from those exams are counted.
+    """
     from sqlalchemy import func
     stmt = select(func.count(Violation.vid))
+    if allowed_test_ids is not None:
+        if not allowed_test_ids:
+            return 0  # admin has no exams → zero violations
+        stmt = stmt.where(Violation.test_id.in_(allowed_test_ids))
     if email:
         stmt = stmt.where(Violation.email == email)
     if test_id:
