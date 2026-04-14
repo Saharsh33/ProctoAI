@@ -370,12 +370,10 @@ const TakeExam = () => {
   };
 
   const handleAutoSubmit = useCallback(async () => {
-    // Sprint 5: Lock UI immediately (<100ms) before network call
-    isSubmittingRef.current = true;
     setExamLocked(true);
     addToast('Time is up! Submitting your exam...', 'info');
     await submitExam();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keep ref in sync so the setInterval closure always calls the latest version
   useEffect(() => {
