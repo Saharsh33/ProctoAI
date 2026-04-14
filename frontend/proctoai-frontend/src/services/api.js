@@ -1,5 +1,5 @@
-// When VITE_API_BASE_URL is not set the Vite dev-server proxy forwards /api → http://localhost:8000
-const BASE_URL = 'http://localhost:8000';
+// Use VITE_API_BASE_URL from environment variables, fallback to localhost for development
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const getHeaders = (auth = false) => {
   const headers = { 'Content-Type': 'application/json' };
