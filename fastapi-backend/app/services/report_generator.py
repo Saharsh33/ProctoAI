@@ -171,7 +171,7 @@ def export_pdf(
     elements: list = []
 
     # ── Header ──
-    elements.append(Paragraph("🛡️ ProctoAI – Proctoring Report", styles["ReportTitle"]))
+    elements.append(Paragraph("ProctoAI – Proctoring Report", styles["ReportTitle"]))
     elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0")))
     elements.append(Spacer(1, 8))
 
@@ -263,7 +263,7 @@ def export_pdf(
         elements.append(t)
     else:
         elements.append(Paragraph(
-            '<font color="#10b981">✅ No violations recorded – excellent conduct.</font>',
+            '<font color="#10b981">No violations recorded – excellent conduct.</font>',
             styles["Body"],
         ))
 
@@ -327,6 +327,6 @@ def _build_summary(email: str, test_id: str, exam_title: str, score_data: dict, 
     elif trust >= 40:
         parts.append("Conduct requires review – multiple violations detected.")
     else:
-        parts.append("⚠️ Low trust score – the session may require manual investigation.")
+        parts.append("Low trust score – the session may require manual investigation.")
 
     return " ".join(parts)
