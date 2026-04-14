@@ -38,8 +38,8 @@ jobs:
 
       - name: Run tests in Docker
         run: |
-          docker-compose -f docker-compose.yml build backend
-          docker-compose -f docker-compose.yml run --rm backend pytest
+          docker compose -f docker-compose.yml build backend
+          docker compose -f docker-compose.yml run --rm backend pytest
 
   lint:
     runs-on: ubuntu-latest
@@ -69,4 +69,4 @@ jobs:
         run: black --check fastapi-backend/app
 
       - name: Check import sorting with isort
-        run: isort --check-only fastapi-backend/app
+        run: isort --check-only --profile black fastapi-backend/app
