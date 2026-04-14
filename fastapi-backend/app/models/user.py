@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import DateTime, Enum, Integer, String, Text, func
 from sqlalchemy import Uuid
@@ -10,6 +10,21 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.enums import RoleEnum
+
+if TYPE_CHECKING:
+    from app.models.admin_action import AdminAction
+    from app.models.exam_report import ExamReport
+    from app.models.longqa import LongQA
+    from app.models.longtest import LongTest
+    from app.models.practicalqa import PracticalQA
+    from app.models.practicaltest import PracticalTest
+    from app.models.proctoring_log import ProctoringLog
+    from app.models.question import Question
+    from app.models.student import Student
+    from app.models.student_test_info import StudentTestInfo
+    from app.models.teacher import Teacher
+    from app.models.violation import Violation
+    from app.models.window_estimation_log import WindowEstimationLog
 
 
 class User(Base):
