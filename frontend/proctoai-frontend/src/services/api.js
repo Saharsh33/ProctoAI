@@ -1,6 +1,5 @@
 // Use VITE_API_BASE_URL from environment variables, fallback to localhost for development
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const getHeaders = (auth = false) => {
   const headers = { 'Content-Type': 'application/json' };
   if (auth) {
@@ -11,6 +10,7 @@ const getHeaders = (auth = false) => {
 };
 
 const handleResponse = async (res) => {
+  console.log(BASE_URL);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'An error occurred' }));
     throw new Error(err.detail || 'Request failed');
@@ -19,6 +19,7 @@ const handleResponse = async (res) => {
 };
 
 export const authAPI = {
+  
   login: (email, password) =>
     fetch(`${BASE_URL}/api/v1/auth/login`, {
       method: 'POST',
