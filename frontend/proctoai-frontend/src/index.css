@@ -955,6 +955,21 @@ tbody tr:hover { background: #f8fafc; }
 
 .footer span { color: #fff; font-weight: 600; }
 
+.footer-contact {
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.footer-contact a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer-contact a:hover {
+  text-decoration: underline;
+}
+
 /* ── Auth Pages ─────────────────────────────────────── */
 .auth-page {
   min-height: 100vh;
