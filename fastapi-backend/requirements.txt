@@ -11,5 +11,5 @@ pytest==8.3.5
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.20
 reportlab==4.1.0
-sqlalchenmy==2.0.36
+sqlalchemy==2.0.36
 uvicorn[standard]==0.30.6
