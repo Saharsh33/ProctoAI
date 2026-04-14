@@ -2,9 +2,10 @@ import enum
 import uuid
 from datetime import datetime
 
-from app.db.base import Base
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base
 
 
 class ExamStatus(str, enum.Enum):

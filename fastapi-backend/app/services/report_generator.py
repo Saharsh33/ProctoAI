@@ -18,14 +18,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from app.crud.report import create as create_report
-from app.crud.report import (
-    get_by_exam_and_email,
-    update_pdf_path,
-)
-from app.models.exam_report import ExamReport
-from app.services.score_calculator import calculate_exam_score
-from app.services.trust_score import calculate_trust_score
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -39,6 +31,15 @@ from reportlab.platypus import (
     TableStyle,
 )
 from sqlalchemy.orm import Session
+
+from app.crud.report import create as create_report
+from app.crud.report import (
+    get_by_exam_and_email,
+    update_pdf_path,
+)
+from app.models.exam_report import ExamReport
+from app.services.score_calculator import calculate_exam_score
+from app.services.trust_score import calculate_trust_score
 
 logger = logging.getLogger(__name__)
 

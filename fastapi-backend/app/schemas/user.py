@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 
-from app.models.enums import RoleEnum
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.models.enums import RoleEnum
 
 
 class UserBase(BaseModel):

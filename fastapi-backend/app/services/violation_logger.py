@@ -17,9 +17,10 @@ import time
 from collections import deque
 from enum import Enum
 
+from sqlalchemy.orm import Session
+
 from app.db.session import SessionLocal
 from app.models.violation import Violation
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,10 @@
 import logging
 
-from app.models.violation import Violation
-from app.schemas.proctoring import ViolationCreate
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.models.violation import Violation
+from app.schemas.proctoring import ViolationCreate
 
 logger = logging.getLogger(__name__)
 

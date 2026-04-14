@@ -14,9 +14,10 @@ import logging
 from datetime import timedelta
 from urllib.parse import urlencode
 
-from app.core.config import settings
 from minio import Minio
 from minio.error import S3Error
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

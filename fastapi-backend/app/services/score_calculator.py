@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import logging
 
-from app.models.question import Question
-from app.models.student import Student
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.models.question import Question
+from app.models.student import Student
 
 logger = logging.getLogger(__name__)
 

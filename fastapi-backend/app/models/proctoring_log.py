@@ -3,7 +3,6 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from app.db.base import Base
 from sqlalchemy import (
     DateTime,
     ForeignKey,
@@ -15,6 +14,8 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base
 
 
 class ProctoringLog(Base):

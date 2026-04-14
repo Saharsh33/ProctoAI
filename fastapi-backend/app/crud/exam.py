@@ -1,9 +1,10 @@
 import logging
 import uuid
 
+from sqlalchemy.orm import Session
+
 from app.models.exam import Exam
 from app.schemas.exam import ExamCreate, ExamUpdate
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

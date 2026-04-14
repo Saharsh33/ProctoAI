@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 
-from app.models.exam import ExamStatus
 from pydantic import BaseModel, ConfigDict
+
+from app.models.exam import ExamStatus
 
 
 class ExamCreate(BaseModel):

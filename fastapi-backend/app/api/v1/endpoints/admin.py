@@ -1,6 +1,11 @@
 import logging
 import uuid
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import distinct
+from sqlalchemy import func as sa_func
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_db, require_admin
 from app.crud.admin import (
     count_violations,
@@ -13,10 +18,6 @@ from app.models.exam_report import ExamReport
 from app.models.user import User
 from app.models.violation import Violation
 from app.schemas.admin import AdminActionCreate, AdminActionOut, AdminViolationOut
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import distinct
-from sqlalchemy import func as sa_func
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

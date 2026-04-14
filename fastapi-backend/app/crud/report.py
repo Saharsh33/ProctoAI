@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from app.models.exam_report import ExamReport
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.models.exam_report import ExamReport
 
 logger = logging.getLogger(__name__)
 

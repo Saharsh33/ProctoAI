@@ -1,9 +1,10 @@
 import logging
 
-from app.models.teacher import Teacher
-from app.schemas.teacher import TeacherCreate
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.models.teacher import Teacher
+from app.schemas.teacher import TeacherCreate
 
 logger = logging.getLogger(__name__)
 

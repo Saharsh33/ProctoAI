@@ -1,10 +1,11 @@
 import logging
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app import crud
 from app.api.deps import get_db
 from app.schemas.teacher import TeacherCreate, TeacherOut
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

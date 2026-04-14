@@ -1,5 +1,8 @@
 import logging
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app import crud
 from app.api.deps import get_db
 from app.core.storage import (
@@ -18,8 +21,6 @@ from app.schemas.proctoring import (
     ViolationOut,
 )
 from app.services.violation_logger import classify_violation, violation_buffer
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

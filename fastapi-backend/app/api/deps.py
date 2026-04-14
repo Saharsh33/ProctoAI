@@ -2,13 +2,14 @@ import logging
 import uuid
 from typing import Generator
 
-from app.core.security import decode_access_token
-from app.db.session import SessionLocal
-from app.models.user import User
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
+
+from app.core.security import decode_access_token
+from app.db.session import SessionLocal
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
